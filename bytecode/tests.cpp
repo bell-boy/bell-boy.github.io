@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "parser.h"
 #include <iostream>
 
 // verifiy that we see the expected graph structure
@@ -57,7 +57,7 @@ int bold_italic_test() {
 }
 
 int file_test() {
-    std::vector<Node> result = FileParser("test.md");
+    std::vector<Node> result = FileParser("./testfiles/test.md");
     bool sub_test_4 = result.size() == 3;
     if(!sub_test_4) return 4;
     
@@ -75,11 +75,22 @@ int file_test() {
     return 0;
 }
 
+int compression_test() {
+    std::vector<Node> raw_ast = FileParser("./testfiles/test2.md");
+    std::vector<Node> result = CompressedAST(raw_ast);
+    
+    int sub_test_1 = result.size() == 3;
+    if(!sub_test_1) return 1;
+
+    return 0;
+}
+
 
 int main() {
     std::cout << "italic_test: " << italic_test() << std::endl;
     std::cout << "bold_test: " << bold_test() << std::endl;
     std::cout << "bold_italic_test: " << bold_italic_test() << std::endl; 
     std::cout << "file_test: " << file_test() << std::endl; 
+    std::cout << "compression_test: " << compression_test() << std::endl;
     return 0;
 }

@@ -3,7 +3,7 @@
 #include <regex>
 #include <fstream>
 
-enum NodeValue {BoldItalic, Bold, Italic, Header, Paragraph, Text};
+enum NodeValue {BoldItalic, Bold, Italic, Header, Paragraph, Text, Empty};
 
 class Node {
     public:
@@ -34,3 +34,5 @@ class TokenMatch {
 std::vector<Node> LineParser(std::string line);
 
 std::vector<Node> FileParser(std::string path);
+
+std::vector<Node> CompressedAST(std::vector<Node> &raw_ast);

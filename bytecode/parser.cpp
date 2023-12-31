@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "parser.h"
 #include <iostream>
 
 
@@ -58,6 +58,11 @@ std::vector<Node> FileParser(std::string path) {
     std::vector<Node> result;
     std::string line;
     while( std::getline(file, line) ) {
+        if(line == "") {
+            result.push_back(Node(Empty));
+            continue;
+        }
+
         std::regex header("^#+\\s");
         std::smatch header_match;
         bool is_header = std::regex_search(line, header_match, header);
@@ -75,6 +80,18 @@ std::vector<Node> FileParser(std::string path) {
 
         LineNode.children = LineParser(line);
         result.push_back(LineNode);
+    }
+    return result;
+}
+
+std::vector<Node> CompressedAST(std::vector<Node> &raw_ast) {
+    auto result = raw_ast;
+    int current = 0;
+    while(current + 1 != result.size() ) {
+        if(result[current].value == result[current + 1].value) {
+            for(auto child : result[current + 1].children) result[current].children.push_back(child);
+            result.erase(next(result.begin(), current + 1));
+        } else current++;
     }
     return result;
 }
