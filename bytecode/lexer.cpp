@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include <iostream>
 
+
 std::vector<Node> LineParser(std::string line) {
     std::vector<Node> result;
     if(line == "") return result;
@@ -12,6 +13,7 @@ std::vector<Node> LineParser(std::string line) {
     std::vector<TokenMatch> unchecked_matches;
     unchecked_matches.push_back(TokenMatch(Italic, std::regex("\\*"), 1));
     unchecked_matches.push_back(TokenMatch(Bold, std::regex("\\*{2}"), 2));
+    unchecked_matches.push_back(TokenMatch(BoldItalic, std::regex("\\*{3}"), 3));
 
     for(auto &umatch : unchecked_matches) {
         offset = 0;
@@ -46,6 +48,33 @@ std::vector<Node> LineParser(std::string line) {
             std::vector<Node> suffix_recurse = LineParser(line.substr(top_group.end_position + top_group.seq_length));
             result.insert(result.end(), suffix_recurse.begin(), suffix_recurse.end());
         }
+    }
+    return result;
+}
+
+std::vector<Node> FileParser(std::string path) {
+    std::ifstream file(path);
+
+    std::vector<Node> result;
+    std::string line;
+    while( std::getline(file, line) ) {
+        std::regex header("^#+\\s");
+        std::smatch header_match;
+        bool is_header = std::regex_search(line, header_match, header);
+
+        Node LineNode(Paragraph);
+        if(is_header)
+        {
+            int length = header_match.str().size() - 1;
+            if(length < 7) {
+                LineNode.contents = std::to_string(length);
+                LineNode.value = Header;
+                line = header_match.suffix().str();
+            }
+        }
+
+        LineNode.children = LineParser(line);
+        result.push_back(LineNode);
     }
     return result;
 }

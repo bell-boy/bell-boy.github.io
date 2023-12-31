@@ -1,8 +1,9 @@
 #include <vector>
 #include <string>
 #include <regex>
+#include <fstream>
 
-enum NodeValue {Bold, Italic, Text};
+enum NodeValue {BoldItalic, Bold, Italic, Header, Paragraph, Text};
 
 class Node {
     public:
@@ -31,3 +32,5 @@ class TokenMatch {
 };
 
 std::vector<Node> LineParser(std::string line);
+
+std::vector<Node> FileParser(std::string path);
