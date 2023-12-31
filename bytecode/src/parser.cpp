@@ -81,10 +81,11 @@ std::vector<Node> FileParser(std::string path) {
         LineNode.children = LineParser(line);
         result.push_back(LineNode);
     }
+    file.close();
     return result;
 }
 
-std::vector<Node> CompressedAST(std::vector<Node> &raw_ast) {
+std::vector<Node> CompressedAST(std::vector<Node> raw_ast) {
     auto result = raw_ast;
     int current = 0;
     while(current + 1 != result.size() ) {

@@ -35,4 +35,4 @@ std::vector<Node> LineParser(std::string line);
 
 std::vector<Node> FileParser(std::string path);
 
-std::vector<Node> CompressedAST(std::vector<Node> &raw_ast);
+std::vector<Node> CompressedAST(std::vector<Node> raw_ast);

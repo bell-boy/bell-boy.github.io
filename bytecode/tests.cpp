@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "transpiler.h"
 #include <iostream>
 
 // verifiy that we see the expected graph structure
@@ -78,11 +78,19 @@ int file_test() {
 int compression_test() {
     std::vector<Node> raw_ast = FileParser("./testfiles/test2.md");
     std::vector<Node> result = CompressedAST(raw_ast);
-    
+
     int sub_test_1 = result.size() == 3;
     if(!sub_test_1) return 1;
 
     return 0;
+}
+
+void representation_test() {
+    std::vector<Node> test_data = FileParser("./testfiles/test3.md");
+    std::string result = buildNode(test_data[0]);
+
+    bool sub_test_1 = result == "<h1><em>italics</em> header</h1>";
+    if(!sub_test_1) std::cerr << "expected: " << "<h1><em>italics</em> header</h1>" << "\ngot: " << result << std::endl;
 }
 
 
@@ -92,5 +100,6 @@ int main() {
     std::cout << "bold_italic_test: " << bold_italic_test() << std::endl; 
     std::cout << "file_test: " << file_test() << std::endl; 
     std::cout << "compression_test: " << compression_test() << std::endl;
+    representation_test();
     return 0;
 }
