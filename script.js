@@ -34,6 +34,8 @@ class BlogPost {
     }
 }
 
-test = new BlogPost("college apps.", "why (and how) i spent a sizable chunk of my break writing a blog from scratch, and what i intend to do with it.", "today", "posts/00000000.html", "00000000")
+post0 = new BlogPost("college apps.", "why (and how) i spent a sizable chunk of my break writing a blog from scratch, and what i intend to do with it.", "today", "posts/00000000.html", "00000000")
+post1 = new BlogPost("it's all just a linear map", "my plans for the new year, plus updates on projects relating to the blog and machine learning", "", "posts/00000001.html", "00000001")
 let posts_container = document.querySelector("#posts-container")
-posts_container.appendChild(test.render())
+posts_container.appendChild(post0.render())
+posts_container.appendChild(post1.render())
