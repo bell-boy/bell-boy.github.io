@@ -22,5 +22,11 @@ std::string buildNode(Node node) {
         case Header:
             return "<h" + node.contents + ">" + innerHTML + "</h" + node.contents + ">";
             break;
+        case List:
+            return "<ul>" + innerHTML + "</ul>";
+            break;
+        case ListItem:
+            return "<li>" + innerHTML + "</li>";
+            break; 
     } 
 }

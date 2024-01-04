@@ -1,5 +1,6 @@
-#include "transpiler.h"
+#include "./src/transpiler.h"
 #include <iostream>
+#include <assert.h>
 
 // verifiy that we see the expected graph structure
 int italic_test() {
@@ -57,9 +58,8 @@ int bold_italic_test() {
 }
 
 int file_test() {
-    std::vector<Node> result = FileParser("./testfiles/test.md");
-    bool sub_test_4 = result.size() == 3;
-    if(!sub_test_4) return 4;
+    std::vector<Node> result = FileParser("../testfiles/test.md");
+    assert(result.size() == 3);
     
     bool sub_test_1 = (result[0].value == Header) && (result[0].children.size() == 1) && (result[0].contents == "1");
     bool sub_test_2 = (result[0].children[0].value == Text) && (result[0].children[0].contents == "this is a header");
@@ -76,7 +76,7 @@ int file_test() {
 }
 
 int compression_test() {
-    std::vector<Node> raw_ast = FileParser("./testfiles/test2.md");
+    std::vector<Node> raw_ast = FileParser("../testfiles/test2.md");
     std::vector<Node> result = CompressedAST(raw_ast);
 
     int sub_test_1 = result.size() == 3;
@@ -86,11 +86,18 @@ int compression_test() {
 }
 
 void representation_test() {
-    std::vector<Node> test_data = FileParser("./testfiles/test3.md");
+    std::vector<Node> test_data = FileParser("../testfiles/test3.md");
     std::string result = buildNode(test_data[0]);
 
     bool sub_test_1 = result == "<h1><em>italics</em> header</h1>";
     if(!sub_test_1) std::cerr << "expected: " << "<h1><em>italics</em> header</h1>" << "\ngot: " << result << std::endl;
+}
+
+void list_test() {
+    std::vector<Node> test_data = CompressedAST(FileParser("../testfiles/test4.md"));
+    assert(test_data.size() == 1);
+    std::string result = buildNode(test_data[0]);
+    assert(result == "<ul><li>item 1</li><li>item 2</li></ul>");
 }
 
 
@@ -101,5 +108,6 @@ int main() {
     std::cout << "file_test: " << file_test() << std::endl; 
     std::cout << "compression_test: " << compression_test() << std::endl;
     representation_test();
+    list_test();
     return 0;
 }

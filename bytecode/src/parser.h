@@ -3,7 +3,7 @@
 #include <regex>
 #include <fstream>
 
-enum NodeValue {BoldItalic, Bold, Italic, Header, Paragraph, Text, Empty};
+enum NodeValue {BoldItalic, Bold, Italic, Header, List, ListItem, Paragraph, Text, Empty};
 
 class Node {
     public:

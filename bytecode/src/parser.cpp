@@ -67,19 +67,34 @@ std::vector<Node> FileParser(std::string path) {
         std::smatch header_match;
         bool is_header = std::regex_search(line, header_match, header);
 
-        Node LineNode(Paragraph);
+        std::regex list("^(\\+|\\*)\\s");
+        std::smatch list_match;
+        bool is_list = std::regex_search(line, list_match, list);
+
+        Node lineNode(Paragraph);
         if(is_header)
         {
             int length = header_match.str().size() - 1;
             if(length < 7) {
-                LineNode.contents = std::to_string(length);
-                LineNode.value = Header;
+                lineNode.contents = std::to_string(length);
+                lineNode.value = Header;
                 line = header_match.suffix().str();
             }
         }
 
-        LineNode.children = LineParser(line);
-        result.push_back(LineNode);
+        if(is_list)
+        {
+            line = list_match.suffix().str();
+            lineNode.value = List;
+        }
+        
+        if(lineNode.value != List) lineNode.children = LineParser(line);
+        else {
+            Node item(ListItem);
+            item.children = LineParser(line);
+            lineNode.children.push_back(item);
+        }
+        result.push_back(lineNode);
     }
     file.close();
     return result;
