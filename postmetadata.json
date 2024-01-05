@@ -1,0 +1,16 @@
+{
+    "posts": [
+        {
+            "title": "college apps.",
+            "description": "why (and how) i spent a sizable chunk of my break writing a blog from scratch, and what i intend to do with it.",
+            "path": "posts/00000000.html",
+            "id": "0x0"
+        },
+        {
+            "title": "it's all just a linear map",
+            "description": "my plans for the new year, and technical updates on the blog and machine learning updates",
+            "path": "posts/00000001.html",
+            "id": "0x1"
+        }
+    ]
+}
