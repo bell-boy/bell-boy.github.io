@@ -88,9 +88,7 @@ int compression_test() {
 void representation_test() {
     std::vector<Node> test_data = FileParser("../testfiles/test3.md");
     std::string result = buildNode(test_data[0]);
-
-    bool sub_test_1 = result == "<h1><em>italics</em> header</h1>";
-    if(!sub_test_1) std::cerr << "expected: " << "<h1><em>italics</em> header</h1>" << "\ngot: " << result << std::endl;
+    assert(result == "<h1><em>italics</em> header</h1>");
 }
 
 void list_test() {
@@ -100,6 +98,25 @@ void list_test() {
     assert(result == "<ul><li>item 1</li><li>item 2</li></ul>");
 }
 
+void esacpe_test() { 
+    std::vector<Node> test_data = CompressedAST(FileParser("../testfiles/test5.md"));
+    assert(test_data.size() == 1);
+    std::string result = buildNode(test_data[0]);
+    assert(result == "<p>this is normal *this is also normal* this is again normal</p>");
+}
+
+void link_test_graph() { 
+    std::vector<Node> test_data = LineParser("[this is a link](to this dot com)");
+    assert(test_data.size() == 1);
+    assert(test_data[0].value == Link);
+    assert(test_data[0].contents == "to this dot com");
+    assert(test_data[0].children[0].contents == "this is a link");
+}
+
+void link_test_string() {
+    std::string test_data = buildNode(LineParser("[this is a link](to this dot com)")[0]);
+    assert(test_data == "<a href=\"to this dot com\">this is a link</a>");
+}
 
 int main() {
     std::cout << "italic_test: " << italic_test() << std::endl;
@@ -109,5 +126,8 @@ int main() {
     std::cout << "compression_test: " << compression_test() << std::endl;
     representation_test();
     list_test();
+    esacpe_test();
+    link_test_graph();
+    link_test_string();
     return 0;
 }

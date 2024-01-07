@@ -17,8 +17,11 @@ Post metadata is structured like so:
 ## Todo
 - [ ] error handling
 - [x] lists
-- [ ] links
-- [ ] create central metadata object
-- [ ] escape characters
+- [x] links
+- [x] create central metadata object
+- [x] escape characters
 - [ ] prevent injections
- 
+- [ ] automate blog headers
+- [ ] create build config file
+- [ ] rewrite all tests to use asserts
+- [ ] add documenting comments

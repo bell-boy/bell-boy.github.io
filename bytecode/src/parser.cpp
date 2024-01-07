@@ -11,35 +11,57 @@ std::vector<Node> LineParser(std::string line) {
     std::vector<TokenMatch> order;
 
     std::vector<TokenMatch> unchecked_matches;
-    unchecked_matches.push_back(TokenMatch(Italic, std::regex("\\*"), 1));
-    unchecked_matches.push_back(TokenMatch(Bold, std::regex("\\*{2}"), 2));
-    unchecked_matches.push_back(TokenMatch(BoldItalic, std::regex("\\*{3}"), 3));
+    unchecked_matches.push_back(TokenMatch(Italic, std::regex("\\*"), std::regex("\\*"), 1));
+    unchecked_matches.push_back(TokenMatch(Bold, std::regex("\\*{2}"), std::regex("\\*{2}"), 2));
+    unchecked_matches.push_back(TokenMatch(BoldItalic, std::regex("\\*{3}"), std::regex("\\*{3}"), 3));
+    unchecked_matches.push_back(TokenMatch(Link, std::regex("\\["), std::regex("\\)"), 1));
 
     for(auto &umatch : unchecked_matches) {
         offset = 0;
         current_suffix = line;
         std::smatch group_match;
-        while ( std::regex_search(current_suffix, group_match, umatch.pattern) ) {
+        while ( std::regex_search(current_suffix, group_match, umatch.get_pattern()) ) {
+            if(group_match.position(0) != 0 && current_suffix[group_match.position(0) - 1] == '\\') goto end_loop;
+
             if(umatch.start_position == -1) {
                 umatch.start_position = group_match.position(0) + offset;
             } else if (umatch.end_position == -1) {
                 umatch.end_position = group_match.position(0) + offset;
+                if(umatch.value == Link) {
+                    std::string inner_string = line.substr(umatch.start_position + umatch.seq_length, umatch.end_position - umatch.start_position - umatch.seq_length);
+                    std::smatch inner_match;
+                    if(!std::regex_search(inner_string, inner_match, std::regex("\\]\\("))) goto end_loop;   
+                }
                 order.push_back(umatch);
             } else break;
+            end_loop:
             offset += group_match.prefix().length() + umatch.seq_length;
             current_suffix = group_match.suffix().str();
         }
     }
 
     sort(order.begin(), order.end());
-    if(order.empty()) result.push_back(Node(Text, line));
+    if(order.empty()) {
+        for(auto it = line.begin(); it != line.end(); it++) {
+            if(*it == '\\') it = line.erase(it);
+        }
+        result.push_back(Node(Text, line));
+    }
     else {
         TokenMatch top_group = order[0];
         std::vector<Node> prefix_recurse = LineParser(line.substr(0, top_group.start_position));
         result.insert(result.end(), prefix_recurse.begin(), prefix_recurse.end());
 
         Node group_node(top_group.value);
-        std::vector<Node> middle_recurse = LineParser(line.substr(top_group.start_position + top_group.seq_length, top_group.end_position - top_group.start_position - top_group.seq_length));
+        std::string middle_line = line.substr(top_group.start_position + top_group.seq_length, top_group.end_position - top_group.start_position - top_group.seq_length);
+        std::vector<Node> middle_recurse;
+        if(top_group.value != Link) middle_recurse = LineParser(middle_line);
+        else {
+            std::smatch inner_match;
+            std::regex_search(middle_line, inner_match, std::regex("\\]\\("));
+            middle_recurse = LineParser(inner_match.prefix().str());
+            group_node.contents = inner_match.suffix().str();
+        }
         group_node.children = middle_recurse;
         
         result.push_back(group_node);

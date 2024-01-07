@@ -28,5 +28,8 @@ std::string buildNode(Node node) {
         case ListItem:
             return "<li>" + innerHTML + "</li>";
             break; 
+        case Link:
+            return "<a href=\"" + node.contents + "\">" + innerHTML + "</a>";
+            break;
     } 
 }
