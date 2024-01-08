@@ -11,6 +11,12 @@
             "description": "my plans for the new year, and technical updates on the blog and machine learning updates",
             "path": "posts/00000001.html",
             "id": "0x1"
+        },
+        {
+            "title": "how to fail at your goals",
+            "description": "how my plans went to shit",
+            "path": "posts/00000002.html",
+            "id": "0x2"
         }
     ]
 }

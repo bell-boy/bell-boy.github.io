@@ -17,6 +17,7 @@ Post metadata is structured like so:
 ## Todo
 - [ ] error handling
 - [x] lists
+- [ ] ordered lists
 - [x] links
 - [x] create central metadata object
 - [x] escape characters
