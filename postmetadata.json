@@ -17,6 +17,12 @@
             "description": "how my plans went to shit",
             "path": "posts/00000002.html",
             "id": "0x2"
+        },
+        {
+            "title": "how to fail at your goals part 2",
+            "description": "how my plans went to shit again, and my plan to fix it",
+            "path": "posts/00000003.html",
+            "id": "0x3"
         }
     ]
 }
