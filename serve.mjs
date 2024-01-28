@@ -7,5 +7,5 @@ let port = 8080
 app.use(express.static("./"))
 
 app.listen(port, () => {
-    console.log(`server running on port: ${port}`)
+    console.log(`server running on port: ${port}\nhttp://localhost:${port}`)
 })

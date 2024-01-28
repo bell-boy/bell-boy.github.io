@@ -35,6 +35,7 @@ class BlogPost {
 }
 
 let posts_container = document.querySelector("#posts-container")
+let posts_array = []
 fetch("./postmetadata.json").then((res) => {
     if(!res.ok) {
         throw new Error(res.status)
@@ -42,6 +43,54 @@ fetch("./postmetadata.json").then((res) => {
     return res.json()
 }).then((val) => {
     val.posts.forEach(element => {
-        posts_container.appendChild((new BlogPost(element.title, element.description, "", element.path, element.id)).render())
-    });
+        posts_array.push((new BlogPost(element.title, element.description, "", element.path, element.id)))
+    })
+    posts_array.reverse()
 })
+
+let first_post = 0
+let ctx_len = 2
+
+let loadNext = () => {
+    first_post += ctx_len
+    updateBttns()
+    renderCtxWindow()
+}
+
+let loadPrev = () => {
+    first_post -= ctx_len
+    updateBttns()
+    renderCtxWindow()
+}
+
+let updateBttns = () => {
+    prevBtn = document.querySelector("#prev-btn")
+    nextBtn = document.querySelector("#next-btn")
+
+    if(first_post + ctx_len >= posts_array.length) {
+        nextBtn.disabled = true;
+    } else {
+        nextBtn.disabled = false;
+    }
+
+    if(first_post - ctx_len < 0) {
+        prevBtn.disabled = true;
+    } else {
+        prevBtn.disabled = false;
+    }
+}
+
+let renderCtxWindow = () => {
+    for (let child = posts_container.firstChild; posts_container.children.length > 1 ; child = posts_container.firstChild) {
+        posts_container.removeChild(child)
+    }
+    posts_array.slice(first_post, Math.min(first_post + ctx_len, posts_array.length)).reverse().map((val) => val.render()).forEach((val) => {
+        posts_container.insertBefore(val, posts_container.firstChild)
+    })
+}
+
+window.onload = () => {
+    updateBttns()
+    renderCtxWindow()
+}
+

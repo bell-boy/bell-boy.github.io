@@ -21,8 +21,11 @@ Post metadata is structured like so:
 - [x] links
 - [x] create central metadata object
 - [x] escape characters
-- [ ] prevent injections
 - [ ] automate blog headers
 - [ ] create build config file
-- [ ] rewrite all tests to use asserts
+- [ ] rewrite all tests in testing library
 - [ ] add documenting comments
+- [ ] make num of displayed posts more responsive
+- [ ] add blockquotes
+- [ ] add footnotes
+- [ ] add images

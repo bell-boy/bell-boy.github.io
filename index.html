@@ -12,11 +12,14 @@
             <p>256 weekly blogs about wtv.</p>
         </div>
     </div>
-    <div class="container">
+    <div class="container flex-column">
         <div class="d-flex flex-column gap-3 m-2" id="posts-container">
-            
+            <div class="d-flex">
+                <button class="btn justify-content-center flex-grow-1" id="prev-btn" onclick="loadPrev()">prev</button>
+                <button class="btn justify-content-center flex-grow-1" id="next-btn" onclick="loadNext()">next</button>
+            </div>
         </div>
-    </div>
+    </div>  
 
     <!--<div class="d-flex justify-content-center align-items-center" style="position: absolute; top: 100%; right: 50%">
         <p>made with ⛽ by femi</p>
