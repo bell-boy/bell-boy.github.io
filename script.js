@@ -46,6 +46,8 @@ fetch("./postmetadata.json").then((res) => {
         posts_array.push((new BlogPost(element.title, element.description, "", element.path, element.id)))
     })
     posts_array.reverse()
+    renderCtxWindow()
+    updateBttns()
 })
 
 let first_post = 0
@@ -81,6 +83,8 @@ let updateBttns = () => {
 }
 
 let renderCtxWindow = () => {
+    console.log( posts_array.slice(first_post, Math.min(first_post + ctx_len, posts_array.length)) )
+    console.log(Math.min(first_post + ctx_len, posts_array.length))
     for (let child = posts_container.firstChild; posts_container.children.length > 1 ; child = posts_container.firstChild) {
         posts_container.removeChild(child)
     }
@@ -88,9 +92,3 @@ let renderCtxWindow = () => {
         posts_container.insertBefore(val, posts_container.firstChild)
     })
 }
-
-window.onload = () => {
-    updateBttns()
-    renderCtxWindow()
-}
-
