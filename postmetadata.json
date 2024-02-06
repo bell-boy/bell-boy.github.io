@@ -29,6 +29,18 @@
             "description": "i get ready to vote",
             "path": "posts/00000004.html",
             "id": "0x4"
+        },
+        {
+            "title": "gigabytes of suffering",
+            "description": "how (not) to build a dataset",
+            "path": "posts/00000005.html",
+            "id": "0x5"
+        },
+        {
+            "title": "zero ex six",
+            "description": "a quick update",
+            "path": "posts/00000006.html",
+            "id": "0x6"
         }
     ]
 }
