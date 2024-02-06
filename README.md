@@ -15,17 +15,21 @@ Post metadata is structured like so:
     - id: string
 
 ## Todo
+
+### Bytecode
 - [ ] error handling
 - [x] lists
 - [ ] ordered lists
 - [x] links
-- [x] create central metadata object
 - [x] escape characters
-- [ ] automate blog headers
-- [ ] create build config file
+- [ ] create build config file - look into cmake
 - [ ] rewrite all tests in testing library
 - [ ] add documenting comments
-- [ ] make num of displayed posts more responsive
 - [ ] add blockquotes
 - [ ] add footnotes
 - [ ] add images
+- [ ] add support for yaml front matter
+
+### 0x100
+- [ ] make num of displayed posts more responsive
+
