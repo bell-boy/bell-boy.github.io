@@ -22,7 +22,7 @@ author:
 
 # URL settings
 url: "bell-boy.github.io/" #
-baseurl: "bell-boy.github.io/"
+baseurl: 
 permalink: /:title/
 google_analytics: # leave it blank if not wish
 fb_appid:
