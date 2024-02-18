@@ -1,1 +1,0 @@
-this is normal \*this is also normal\* this is again normal
