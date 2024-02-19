@@ -2,6 +2,7 @@
 title: maybe ai will kill us all
 cnt: "0x08"
 layout: post
+tags: AI productivity
 ---
 This is going to be my first long blog (and first blog on time) in a while! I'll talk about an interesting problem I learned about this week.
 # productivity check in
