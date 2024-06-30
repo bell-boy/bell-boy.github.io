@@ -88,6 +88,8 @@ However, I'm skeptical on the idea of playing with SENNs for a couple months. I 
 
 I'm interested in your thoughts!
 
+---
+
 [^1]:From what I understand, the motivation for this criterion is so that similar points have similar interpretations. However, think of a function like the sigmoid. There, some points that are close together just have different drastically different outputs. I'm skeptical on the value of this one.
     
 [^2]:It isn't obvious to me why this would be true. But I plan to implement the architecture on a lower dimensional problem and find out how valid this line of thinking is.

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}">
+  <title>archive</title>
+</head>
+<body class="flex min-h-screen flex-col items-center">
+  <div class="w-[40%] sticky top-0 bg-white z-10 flex flex-row justify-between items-center p-4">
+    <h1 class="text-4xl font-bold text-gray-600">archive</h1>
+    <a class="text-left" href="/">home</a>
+  </div>
+  <div class="flex-grow w-[40%] my-4">
+    {% for post in site.posts %}
+      <div class="flex justify-between my-1">
+        <a href="{{ post.url }}" class="text-lg link max-w-[60%] block break-words">{{ post.title }}</a>
+        <span class="text-right">{{ post.date | date: "%B %d, %Y" }}</span>
+      </div>
+      {% unless forloop.last %}
+        <hr class="">
+      {% endunless %}
+    {% endfor %}
+  </div> 
+  <footer class="py-2">
+    {% include footer.html %}
+  </footer>
+</body>
+</html>
