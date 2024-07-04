@@ -12,7 +12,7 @@ usemathjax: true
 It's an intrinsic method, meaning that it achieves interpretability goals by making changes to model architecture, not by interpreting weights or activations.
 
 non linear-linearity
-====================
+---
 
 The paper starts by outlining what it *really* means to have an interpretation of a model.
 

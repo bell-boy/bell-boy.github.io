@@ -20,8 +20,8 @@
     <div>
       {% for post in site.posts limit:5 %}
         <div class="flex justify-between my-1">
-          <a href="{{ post.url }}" class="text-lg link max-w-[60%]">{{ post.title }}</a>
-          <p class="text-left">{{ post.date | date: "%B %d, %Y" }}</p>
+          <a href="{{ post.url }}" class="text-md link max-w-[60%]">{{ post.title }}</a>
+          <p class="text-right">{{ post.date | date: "%B %d, %Y" }}</p>
         </div>
       {% endfor %}
     </div> 
@@ -32,11 +32,15 @@
       {% include _components/project_card.html 
         title = "Implementing Elastic Weight Consolidation in Pytorch"
         description = "Replicated Overcoming catastrophic forgetting in neural
-        networks by Kirkpatrick et al. in pytorch. Investigated using the Fisher Information Matrix for network pruning."
+        networks by Kirkpatrick et al. in pytorch. Investigated using the Fisher Information Matrix for network pruning. Detailed write up in blog post"
+        code_url = "https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing"
+        blog_url = '/2024/06/30/implementing-ewc.html'
       %}
       {% include _components/project_card.html 
         title = "Epileptic Uncertainiy Framework"
-        description = "Applied Heteroskedastic Regression to Seizure Prediction using a CNN. Acheive parity with comparable CNN model trained using the classical prediction framework."
+        description = "Applied Heteroskedastic Regression to Seizure Prediction using a CNN. Acheive parity with comparable CNN model trained using the classical prediction framework. Blog post coming soon."
+        code_url = "https://github.com/bell-boy/SeizureSense"
+        blog_url = "https://drive.google.com/file/d/1wRe8R8Xyd5VdlRU2eJHBjq76D6fkvUcq/view?usp=sharing"
       %}
     </div>
   </div>
