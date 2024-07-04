@@ -11,20 +11,20 @@
     <h1 class="text-4xl font-bold text-gray-600 mb-2">femi bello</h1>
     <h2 class="text-gray-400 text-sm">student @ ut austin </h2>
     <p>computer science and mathematics major interested in machine learning</p>
-    <p>contact me at <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a class="text-blue-500 hover:text-blue-700" href="https://x.com/biggieboijosh">x</a> </p>
+    <p>contact me at <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="link">github</a> | <a class="link">resume</a> | <a class="link" href="https://x.com/biggieboijosh">x</a> </p>
 
     <hr class="my-2">
 
     <h2 class="text-2xl mb-2">recent blogs</h2>
-    <p>I try to publish a blog per week. read more in my <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">archive</a></p>
+    <p>I try to publish a blog per week. read more in my <a href="/archive" class="link">archive</a></p>
     <div>
       {% for post in site.posts limit:5 %}
         <div class="flex justify-between my-1">
-          <a href="{{ post.url }}" class="text-lg text-blue-500 hover:text-blue-700">{{ post.title }}</a>
-          <p>{{ post.date | date: "%B %d, %Y" }}</p>
+          <a href="{{ post.url }}" class="text-md link max-w-[60%]">{{ post.title }}</a>
+          <p class="text-right">{{ post.date | date: "%B %d, %Y" }}</p>
         </div>
       {% endfor %}
-    </div>
+    </div> 
     <hr class="my-2">
 
     <h2 class="text-2xl mb-2">projects</h2>
@@ -32,11 +32,15 @@
       {% include _components/project_card.html 
         title = "Implementing Elastic Weight Consolidation in Pytorch"
         description = "Replicated Overcoming catastrophic forgetting in neural
-        networks by Kirkpatrick et al. in pytorch. Investigated using the Fisher Information Matrix for network pruning."
+        networks by Kirkpatrick et al. in pytorch. Investigated using the Fisher Information Matrix for network pruning. Detailed write up in blog post"
+        code_url = "https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing"
+        blog_url = '/2024/06/30/implementing-ewc.html'
       %}
       {% include _components/project_card.html 
         title = "Epileptic Uncertainiy Framework"
-        description = "Applied Heteroskedastic Regression to Seizure Prediction using a CNN. Acheive parity with comparable CNN model trained using the classical prediction framework."
+        description = "Applied Heteroskedastic Regression to Seizure Prediction using a CNN. Acheive parity with comparable CNN model trained using the classical prediction framework. Blog post coming soon."
+        code_url = "https://github.com/bell-boy/SeizureSense"
+        blog_url = "https://drive.google.com/file/d/1wRe8R8Xyd5VdlRU2eJHBjq76D6fkvUcq/view?usp=sharing"
       %}
     </div>
   </div>

@@ -3,14 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}">
+  <link rel="stylesheet" href="{{ "/assets/css/blog.css" | relative_url }}">
+  <link rel="stylesheet" href="{{ "/assets/css/code-style.css" | relative_url }}">
   <title>{{ page.title }}</title>
 </head>
 <body class="flex min-h-screen flex-col items-center">
-  <div class="w-[40%]">
-    <h1>{{ page.title }}</h1>
-    {{ content }}
+  <div class=" w-[60%] py-5 flex-grow flex flex-col items-center">
+    <h1 class="text-5xl font-bold text-gray-600 mb-2">{{ page.title }}</h1>
+    <div class="content">
+      {% toc %}
+      {{ content }}
+    </div>  
+    <div class="flex justify-around w-[100%] my-5">{% if page.previous %}<a href="{{ page.previous.url }}"> &laquo; prev</a>{% endif %} <a href="/">home</a> {% if page.next %}<a href="{{ page.next.url }}"> next &raquo; </a>{% endif %}</div>
   </div>
+  <footer class="py-2">
+    {% include footer.html %}
+  </footer>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
 </body>
 </html>

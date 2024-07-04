@@ -12,7 +12,7 @@ usemathjax: true
 It's an intrinsic method, meaning that it achieves interpretability goals by making changes to model architecture, not by interpreting weights or activations.
 
 non linear-linearity
-====================
+---
 
 The paper starts by outlining what it *really* means to have an interpretation of a model.
 
@@ -87,6 +87,8 @@ So either A, I'm missing some Huge Obvious Flaw. Or B, there might need to be mo
 However, I'm skeptical on the idea of playing with SENNs for a couple months. I think I'll get more value out of just reading more.
 
 I'm interested in your thoughts!
+
+---
 
 [^1]:From what I understand, the motivation for this criterion is so that similar points have similar interpretations. However, think of a function like the sigmoid. There, some points that are close together just have different drastically different outputs. I'm skeptical on the value of this one.
     
