@@ -1,12 +1,53 @@
----
----
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 @layer components {
+  .footnotes {
+    @apply text-xs;
+  }
+
+  .content p:not(ol p) {
+    @apply my-3;
+  }
+
+  .footnotes ol {
+    @apply list-decimal;
+  }
+
+  .content h1 {
+    @apply text-3xl font-bold text-gray-600 mb-2
+  }
+
+  .content h2 {
+    @apply text-2xl font-bold text-gray-600 mb-2
+  }
+
+  .content hr {
+    @apply my-2
+  }
+
+  .content img {
+    @apply mx-auto
+  }
+
   a {
     @apply text-blue-500 hover:text-blue-700;
+  }
+
+  .content blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600;
+  }
+
+  #toc {
+    @apply bg-gray-100 p-4  mb-4;
+  }
+
+  #toc ul {
+    @apply list-disc list-inside pl-2;
   }
 }

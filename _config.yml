@@ -19,8 +19,4 @@ kramdown:
   input: GFM
 
 plugins:
-  - jekyll-postcss
   - jekyll-toc
-
-postcss:
-  cache: false
