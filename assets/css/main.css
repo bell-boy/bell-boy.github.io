@@ -5,6 +5,9 @@
 html {
   scroll-behavior: smooth;
 }
+div.highlight {
+  overflow: auto;
+}
 
 @layer components {
   .footnotes {
@@ -44,10 +47,19 @@ html {
   }
 
   #toc {
-    @apply bg-gray-100 p-4  mb-4;
+    @apply border border-gray-300 rounded p-4  mb-4 list-inside pl-2 list-none;
+  }
+  
+  .content ul {
+    @apply list-inside list-disc  
+  }
+  
+  #toc ul {
+    @apply list-none list-inside
   }
 
-  #toc ul {
-    @apply list-disc list-inside pl-2;
+  .content ol {
+    @apply list-outside list-decimal 
   }
+
 }

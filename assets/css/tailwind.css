@@ -618,15 +618,29 @@ a:hover {
 
 #toc {
   margin-bottom: 1rem;
-  --tw-bg-opacity: 1;
-  background-color: rgb(243 244 246 / var(--tw-bg-opacity));
+  list-style-position: inside;
+  list-style-type: none;
+  border-radius: 0.25rem;
+  border-width: 1px;
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity));
   padding: 1rem;
+  padding-left: 0.5rem;
+}
+
+.content ul {
+  list-style-position: inside;
+  list-style-type: disc;
 }
 
 #toc ul {
   list-style-position: inside;
-  list-style-type: disc;
-  padding-left: 0.5rem;
+  list-style-type: none;
+}
+
+.content ol {
+  list-style-position: outside;
+  list-style-type: decimal;
 }
 
 .visible {
@@ -696,6 +710,10 @@ a:hover {
 
 .flex {
   display: flex;
+}
+
+.grid {
+  display: grid;
 }
 
 .contents {
@@ -769,6 +787,10 @@ a:hover {
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+}
+
+.p-3 {
+  padding: 0.75rem;
 }
 
 .p-4 {
@@ -850,6 +872,11 @@ a:hover {
   color: rgb(239 68 68 / var(--tw-text-opacity));
 }
 
+.grayscale {
+  --tw-grayscale: grayscale(100%);
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+
 .transition {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
@@ -860,6 +887,10 @@ a:hover {
 
 html {
   scroll-behavior: smooth;
+}
+
+div.highlight {
+  overflow: auto;
 }
 
 .hover\:text-blue-700:hover {
