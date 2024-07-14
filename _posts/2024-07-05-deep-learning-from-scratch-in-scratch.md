@@ -227,7 +227,7 @@ So can you build a nerual network in scratch? Yes! Will it work? Well...
 # looking back
 
 Why did it *really* fail to converge. Was it because of shoddy GPT math? Possibly. However, the model has everything pretty much stacked against it. 
-- Training is *unfathoably* slow (in the time I might do 5 training steps on 250 samples, I could've finished 5 epochs on the full 60k images in the equivilant pytorch implementation) as a result even the 4 sample graph took around 15 mintues of training.  
+- Training is *unbearably* slow (in the time I might do 5 training steps on 250 samples, I could've finished 5 epochs on the full 60k images in the equivilant pytorch implementation) as a result even the 4 sample graph took around 15 mintues of training.  
 - Data is incredilbly limited, even sample efficent models trained on MNIST need a few thousand examples.  
 - The model is pretty small, and super shallow. While yes, I could've added more hidden layers. I also have spent a week+ on this. 
 - The loss curve was *smooth*! I suspect this is because I'm not using SGD, but I wasn't expecting it to be this smooth, what's up with that? 
