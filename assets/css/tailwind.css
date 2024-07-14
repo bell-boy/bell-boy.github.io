@@ -624,23 +624,25 @@ a:hover {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(209 213 219 / var(--tw-border-opacity));
-  padding: 1rem;
   padding-left: 0.5rem;
 }
 
 .content ul {
   list-style-position: inside;
   list-style-type: disc;
+  padding-left: 0.5rem;
 }
 
 #toc ul {
   list-style-position: inside;
   list-style-type: none;
+  padding-left: 0.5rem;
 }
 
 .content ol {
   list-style-position: outside;
   list-style-type: decimal;
+  padding-left: 0.5rem;
 }
 
 .visible {
