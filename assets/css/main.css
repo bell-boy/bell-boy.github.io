@@ -47,11 +47,11 @@ div.highlight {
   }
 
   #toc {
-    @apply border border-gray-300 rounded mb-4 list-inside pl-2 list-none;
+    @apply border border-gray-300 rounded mb-4 py-2 list-inside pl-2 list-none;
   }
   
   .content ul {
-    @apply list-inside list-disc pl-2 
+    @apply list-inside list-disc pl-2
   }
   
   #toc ul {
