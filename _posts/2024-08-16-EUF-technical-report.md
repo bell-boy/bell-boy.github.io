@@ -17,7 +17,7 @@ The main problem that seizure prediction is trying to solve is that around 20-40
 
 The main way seizures are predicted is under what I'll call the *Standard Framework* (SF). Under the SF, seizure prediction takes electroencephalogram (EEG) data and uses machine learning to predict if a seizure will happen in a window of time specified by two numbers. The *Seizure Prediction Horizon* (SPH) and the *Seizure Occurance Period* (SOP). 
 
-When we make a prediction, we're saying that within SOP minutes, but not before SPH minutes, a seizure will occur. These two numbers are hyper parameters, and are fixed before training. This effictivly makes seizure prediction under the SF a classification problem. 
+When we make a prediction, we're saying that within SOP minutes, but not before SPH minutes, a seizure will occur. These two numbers are hyper parameters, and are fixed before training. This makes seizure prediction under the SF a classification problem. 
 
 [image here]
 
@@ -25,7 +25,7 @@ Research has suggested that there is no optimal SPH/SOP for all people.[^1] Inst
 
 In this work, I propose the Epileptic Uncertainty Framework (EUF). In the EUF we keep the SOP, but redefine it as the Maximum Prediction Horizon (MPH). Additonally, we predict a *distribution* over possibile times that the seizure will occur. Making seizure prediction under the EUF a classification *and* regression problem.
 
-I acheive similar classification results to prior work, and very calibrated regression distributions, as seen by brier score. We by training the model to predict a distribution, we go from being able to answer the question "What is the probablity I will have a seizure in this specific time window" to being able to answer "What is the probablity I'll have a seizure within x minutes", where x is controlled by the paitent.
+I acheive similar classification results to prior work, and very calibrated regression distributions, as seen by brier score. By training the model to predict a distribution, we go from being able to answer the question, "What is the probablity I will have a seizure in this specific time window" to being able to answer, "What is the probablity I'll have a seizure within x minutes", where x is controlled by the paitent.
 
 # Methodology
 
@@ -39,9 +39,9 @@ I draw samples that are ten minutes long. To extend the use of the dataset, I dr
 
 The seizure signals are very weak, so I multiply them by $ 10^3 $ and run them through the Short-Time Fourier Transform (STFT). STFT turns the raw signals into spectrograms, which gives the model time and frequency information. In theory, the model can implement it's own STFT, but I find that you need an extra OOM of parameters to do the job of the STFT.
 
-The end result of that is a 23 channel image. I resize all the images into a 256 by 256 image and pass it to the network.
+The end result of that is a large 23 channel image which I resize into a 256 by 256 image. Finally a tensor of shape $ (23, 256, 256) $ is passed to the model.
 
-The end result is a tensor of shape $ (23, 256, 256) $. Which is passed to the model.
+For data with seizure that happen later than the MPH, the label is set to $ \infty $, otherwise, it's set for the time between the end of the data and the next seizure. All the non-$\infty$ data is scaled to have variance one (and shifted to have mean 0 in the case of heteroskedastic regression). 
 
 I only train on a single patient due to not wanting to work on this project for another week.
 
@@ -81,11 +81,11 @@ $$ p(t | \mathbf{X}, \Omega)p(\Omega) $$
 
 ## Model
 
-I use a model very similar in archecture to AlexNet.I adjusted in the nubmer channels that had to pass through the model, and some filter sizing. I also make the model *Multi-Head*. Meaning for each parameter in the output vector, a seperate set of MLP layers is set to extract different information from the shared layers without interfering with each other.
+I use a model very similar in archecture to AlexNet. I adjusted in the nubmer channels that had to pass through the model, and some filter sizing. I also make the model *Multi-Head*. Meaning for each parameter in the output vector, a seperate set of MLP layers is set to extract different information from the shared layers without interfering with each other.
 
 [image]
 
-I find that single head training doesn't work very well. The model has to struggle to maintain performane on all of the tasks. The classification head is trained seperately from the others.
+I find that single head training doesn't work very well. The model has to struggle to maintain performance on all of the tasks. The classification head is trained seperately from those that describe the conditional distribution.
 
 ## Training
 
@@ -103,9 +103,9 @@ Out of curiosity, I tried a different distribution. The Normal distribution. The
 
 $$ \mathcal{L}_{Normal}(\mathcal{D}) = \sum_{i=1}^N \frac{(\mu - t_i)^2}{\sigma^2} + \frac{\ln 2 \pi \sigma^2}{2} - \ln \omega $$
 
-A major problem when using multiple heads is *Catastrophic Forgetting*. The performance of one head goes down as the other head goes up. To minimize this, I use the regularization provided in the paper Learning Without Forgetting.[^3]
+A major problem when using multiple heads is *Catastrophic Forgetting*. The performance of one head goes down as the other head goes up. Training changes the shared layers without regard for the other head. To minimize this, I use the regularization provided in the paper *Learning Without Forgetting* by Li and Hoiem.[^3]
 
-It's an additional term added to the loss that prevents the predicted distribution of the classification head from it's original state, while still being flexible enough to learn the new task. The loss is simply 
+It's an additional term added to the loss that prevents the predicted distribution of the classification head from moving to far from it's original state, while still being flexible enough to learn the new task. The loss is simply 
 
 $$ D_\textrm{KL}(\omega_{new} || \omega_{old}) $$
 
@@ -115,6 +115,73 @@ Note that is distribution is the *classification distribution* denoted by $ \ome
 
 This loss works very well to prevent Catastrophic Forgetting, without any hyperparameter tuning!
 
+When training the regression distribution I only train on positive samples. To prevent the classification head from updating I stop gradient flow from the MLE term of the optimization criterion. 
+
+### Training the Gaussian Head
+
+When the family of distributions is Gaussian with differing variance, the regression is called *heteroskedastic*. Training heteroskdastic models can be hard, because of the first term in the loss function. Stirn et al. Identify this in their paper *Faithful Heteroskedastic Regression in Nueral Networks*[^4] and propose two measures to resolve it. 
+
+First, prevent graident flow from the varience head (the $ \sigma^2 $ term) to the shared layers. Next, to remove the influence of the varience head, scale the gradient of the regression head by $ \sigma^2 $ during the backward pass. These two methods are necessary to get acceptable performance on the regression head.  
+
+Specific training details can be found in the attached colab notebook.
+
+# Results
+
+First, to evaluation classification performance, I use three metrics. AUROC, False Positive Rate per Hour (FPR/H), and Sensitivity. These are standard throught the seizure prediction field.
+
+Next, to evaulate regression performance, I use another three metrics. RMSE, Briar Score, and Negative Log Likelihood (Loss). 
+
+// TODO: describe how bs and cc are calculated
+
+I perform 5 fold cross validation with a holdout test set to determine these metrics. 
+
+Additionally, I also plot calibration curves. These are a more qualitative way to see if the predictions made by the distribtuion can be trusted and provide an intutive sense of model performance. 
+
+| Regression type | AUROC ⬆️ | FPR/H ⬇️ | Sensitivity ⬆️ | RMSE ⬇️ | Briar ⬇️ | Loss ⬇️ |
+| --- | --- | --- | --- | --- | --- | --- |
+| Gaussian | $ 0.987 \pm 0.004 $ | $ 0.386 \pm 0.090 $ | $ 0.955 \pm 0.049 $ | $ 0.962 \pm 0.064 $ | $ 0.130 \pm 0.020 $ | $ 0.150 \pm 0.040 $
+| Exponential | $ 0.983 \pm 0.007 $ | $ 0.462 \pm 0.219 $ | $ 0.935 \pm 0.076 $ | $ 1.058 \pm 0.174 $ | $ 0.141 \pm 0.030 $ | $ 1.63 \pm 0.208 $
+
+The arrows indicate whether a lower or higher score is better.
+
+[curve1]
+
+[curve2]
+
+These classification results are very similar to the work of [blank] and [blank]. Who also use a similar model archetecture, and acheive results out of our error bars only for FPR/H
+
+As we see from the calibration curves and briar scores, when the model says that there's a $ p $ pecent chance of a seizure within their specificed time window, there usually is a $ p $ percent chance. 
+
+Gaussian and Exponential regression don't differ significantly. I will note that the Exponential model was much harder to train, and required a little bit of tuning hyper parameters. I didn't tune much however, so this might explain the weaker performance. 
+
+Where the two families do differ though, is their interpretation. The distribution given by the gaussian is best interpreted as a window of variable length. "There is a $ p $ percent chance that a seizure will take place between times $ a $ and $ b $." However, there's no good reason to assume that epilepsy is a Gaussian process. 
+
+The interpretation of the Exponential is much more convient. "The probablity that you will have a seizure within $ t $ minutes is $ p $." This warning time can be adjusted as needed to suit the patient.
+
+# Conclusion and Discussion
+
+Despite interesting inital results showing that the EUF is a strong alternative to the SF, there are many limitations to this work.
+
+1. I only trained on one patient 
+2. I did no hyperparameter tuning
+3. The RMSE is oddly close to the varience of the data
+4. CHBMIT data is limited in quantity. 
+5. The model is ~80M parameters, and uses 23 channels of seizure data. How can we use a smaller model and train on less channels?
+
+Future directions include 
+
+1. Multi-Paitent Pretraining & Paitent Fine-Tuning
+2. EUF without the MPH hyperparameter.
+3. Different model architectures and thier effect on performance. 
+4. Model distillation, and few channel prediction on edge devices.
+
+Thank you for reading.
+
 [^1]: Bandarabadi, Mojtaba, Jalil Rasekhi, César A. Teixeira, Mohammad R. Karami, and António Dourado. “On the Proper Selection of Preictal Period for Seizure Prediction.” Epilepsy & Behavior 46 (May 1, 2015): 158–66. https://doi.org/10.1016/j.yebeh.2015.03.010.
 
 [^2]: Ali Shoeb. Application of Machine Learning to Epileptic Seizure Onset Detection and Treatment. PhD Thesis, Massachusetts Institute of Technology, September 2009.
+
+[^3]: Li, Zhizhong, and Derek Hoiem. “Learning without Forgetting.” arXiv, February 14, 2017. https://doi.org/10.48550/arXiv.1606.09282.
+
+[^4]: Stirn, Andrew, Hans-Hermann Wessels, Megan Schertzer, Laura Pereira, Neville E. Sanjana, and David A. Knowles. “Faithful Heteroscedastic Regression with Neural Networks.” arXiv, December 18, 2022. https://doi.org/10.48550/arXiv.2212.09184.
+
