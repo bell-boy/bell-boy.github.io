@@ -1,3 +1,6 @@
+---
+---
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,11 +26,27 @@ div.highlight {
   }
 
   .content h1 {
-    @apply text-3xl font-bold text-gray-600 mb-2
+    @apply text-3xl font-bold text-gray-600 mb-2 self-start
   }
 
   .content h2 {
-    @apply text-2xl font-bold text-gray-600 mb-2
+    @apply text-2xl font-bold text-gray-600 mb-2 self-start
+  }
+
+  .content h3 {
+    @apply text-xl font-bold text-gray-600 mb-2 self-start
+  }
+
+  tr {
+    @apply border-b border-gray-300
+  }
+
+  td {
+    @apply p-2 min-w-0
+  }
+
+  table {
+    @apply table-auto border-collapse min-w-0 
   }
 
   .content hr {
