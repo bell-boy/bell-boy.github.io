@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--<link rel="stylesheet" href="/assets/css/tailwind.css">-->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/code-style.css">
+  <title>implementing elastic weight consolidation</title>
+</head>
+<body class="flex min-h-screen flex-col items-center w-screen">
+  <div class="py-5 flex-grow flex flex-col items-center" >
+    <h1 class="text-5xl font-bold text-gray-600 mb-2 w-[60%]">implementing elastic weight consolidation</h1>
+    <div class="content p-3 w-[60%] ">
+      <ul id="toc" class="section-nav">
+<li class="toc-entry toc-h1"><a href="#the-theory-behind-it-all">the theory behind it all</a></li>
+<li class="toc-entry toc-h1"><a href="#implementing-the-thing">implementing the thing</a></li>
+<li class="toc-entry toc-h1"><a href="#caveats">caveats</a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#why-does-ewc-work-so-well">why does ewc work so well?</a></li>
+<li class="toc-entry toc-h2"><a href="#femi-ive-never-even-heard-of-continual-learning">femi, i’ve never even heard of continual learning</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#model-pruning">model pruning</a></li>
+<li class="toc-entry toc-h1"><a href="#conclusions--meta-lessons">conclusions &amp; meta-lessons</a></li>
+</ul>
+      <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I wrote about the process of building understanding around the paper <a href="/2024/03/08/three-old-dead-stataticians.html">here</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
+
+<p>The goal of Elastic Weight Consolidation (the main method described in the paper) is to counteract catastrophic fogetting, a phenomena where nerual networks trained on multiple seperate tasks sequentially rapidly forget how to perform old tasks.</p>
+
+<p>(Preventing catastrophic forgetting is an entire sub-field called <strong>Continual Learning</strong>. The first question that comes to mind is why not just train on old task data? This is called <em>Rehersal</em> and the sub-sub-field of <em>Rehersal-Free CL</em> is concerned with techniques that don’t rely on old data. When I say CL throught this post, assume I’m refering to Rehersal-Free CL.)</p>
+
+<p>Elastic weight consolidation prevents this by figuring out which weights are important for a task, and which weights can be changed and penalizing the model for changeing these weights.</p>
+
+<h1 id="the-theory-behind-it-all">the theory behind it all</h1>
+
+<p>The method is as follows. We are given a dataset \( \mathcal{D} \) which we split into two parts, \(  \mathcal{D}_A \) and \(  \mathcal{D}_B \). We’ve just finished training \( \boldsymbol{\theta}_A \) on dataset \(  \mathcal{D}_A \) and now we want to train on dataset \(  \mathcal{D}_B \).</p>
+
+<p>Kirkpatrick et al. turn to <em>bayes rule</em> next.</p>
+
+<p>\[ P(\boldsymbol{\theta} | \mathcal{D}) =  \frac{P( \mathcal{D} | \boldsymbol{\theta} )P(\boldsymbol{\theta})}{P(\mathcal{D})} \tag{1} \]</p>
+
+<p>What this statement is telling us is that the probablity of any set of paramters \( \boldsymbol{\theta} \) is dependant on three things. The likelihood \( P(\mathcal{D} | \boldsymbol{\theta}) \), the marginal probablity \( P(\mathcal{D}) \), and the <em>prior probablity</em> \(  P(\boldsymbol{\theta}) \). We want the set of parameters theta that is <em>most likely</em> under dataset \(  \mathcal{D} \).</p>
+
+<p>To make the remaining calculations simpler, let’s take the log of our equation and negate it.</p>
+
+<p>\[  -\ln P(\boldsymbol{\theta} | \mathcal{D}) \propto -\ln P(\mathcal{D} | \boldsymbol{\theta}) - \ln P(\boldsymbol{\theta}) \tag{2} \]</p>
+
+<p>You’ll notice I dropped the marginal probablity. That’s because we have no control over it, and it doesn’t matter when we’re maximizing the probablity of \(  \boldsymbol{\theta} \).</p>
+
+<p>The key trick of EWC is that the authors split the dataset, <em>on the left hand side</em>. The equation then becomes.</p>
+
+<p>\[  -\ln P(\boldsymbol{\theta} | \mathcal{D}) \propto -\ln P(\mathcal{D}_B | \boldsymbol{\theta}) - \ln P(\boldsymbol{\theta} | \mathcal{D}_A) \tag{3} \label{loglike} \]</p>
+
+<p>The first term, \(  -\ln P(\mathcal{D}_B | \boldsymbol{\theta}) \), is known as the <em>negative log-likelihood</em>. Calculating this is standard practice and nothing new.</p>
+
+<p>The second term is impossible to calculate.</p>
+
+<p>In order to approximate it, we have to understand really what it means. The second term on the left hand side of equation \(  \eqref{loglike} \) is equivalent to the <em>loss function of \(  \mathcal{D}_A \)</em>, \(  \mathcal{L}_A(\boldsymbol{\theta}) \). The paper builds on the work of <a href="https://core.ac.uk/download/pdf/216127203.pdf">A Practical Bayesian Framework for Backpropagation
+Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal{L}_A(\boldsymbol{\theta}) \) around the already trained, well perfoming<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup> model \(  \boldsymbol{\theta}^*_A \).</p>
+
+<p>\[  \frac{1}{2}(\boldsymbol{\theta} - \boldsymbol{\theta}^*_A)^T\boldsymbol{F}(\boldsymbol{\theta} - \boldsymbol{\theta}^*_A ) \tag{4} \label{approx} \]</p>
+
+<p>Equation \( \eqref{approx} \) is the said approximation. \(  \boldsymbol{F} = \nabla \nabla \mathcal{L}_A(\boldsymbol{\theta}) \)<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup> and is also known as the <em>Observed Fisher Information Matrix</em>. The FIM is calculated right as we finish training on the first task, the old model weights stored, and the old data is discarded.</p>
+
+<p>However, neural networks have a large amount of paramters. Even a model with a 100,000 paramters (very small by modern standards) would need a FIM of size \(  10^{10} \)!!! It’s not even feasible to think about calculating it for larger models.</p>
+
+<p>So the authors get clever. They use the diagonal of the FIM to approximate the real thing. If we let \(  \boldsymbol{F}_i \) represent the \( i \)th element on the diagonal of the FIM. Then the final loss function becomes</p>
+
+<p>\[  \mathcal{L}_B(\boldsymbol{\theta}) + \sum_i \frac{\lambda}{2} \boldsymbol{F}_i ( \theta_i -  \theta^*_{A,i} )^2  \tag{5} \label{finloas} \]</p>
+
+<h1 id="implementing-the-thing">implementing the thing</h1>
+
+<p>Before we talk about actual implementation, we should talk about the “tasks” we use to evaluate the method.</p>
+
+<p>Within the continual learning community, it’s common to use <em>permuted MNIST</em> to benchmark continual learning methods. In permuted MNIST, each task is a permuation. When learning a task, the input to the model is the MNIST data, permuted according to the task’s permutation.</p>
+
+<p>EWC needs two things, it needs the old paramters from the old task, and it needs a calculated FIM.</p>
+
+<p>The first componenet was easy, I could use pytorch’s <code>model.state_dict()</code> function to save and load old paramters. The FIM was a little more tricky.</p>
+
+<p>My first instinct was to just calculate the Hessian and save the diagonal. This was obiviously a bad idea and made more complicated by the fact that pytorch’s backpropagation engine would freak out if i wanted anything higher order than the gradient. After a couple of hours of pulling my hair out, I realize that the authors explicitly say that the FIM can be calculated from first order derivatives. This is (apparently), true! <a href="https://en.wikipedia.org/wiki/Fisher_information">Wikipeida</a> even says so!<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote" rel="footnote">3</a></sup> According to these sources, the diagonal of the FIM is \(  (\nabla_{\boldsymbol{\theta}} \mathcal{L}_A) ^ 2  \)!</p>
+
+<p>The model I used was a simple MLP with two hidden layers of size 400. I used SGD with momentum and a learning rate of \(  10^{-3} \).</p>
+
+<p>The first thing I wanted to do was see catastrophic forgetting. Here’s a graph showing how performance fares without EWC!</p>
+
+<p><img src="/assets/images/forget-curve-plain.png" alt="Training Curve With No EWC" /></p>
+
+<p>We see model performance decline almost monotonically. After the fourth task, the model is down to 50% accuracy. 50% doesn’t sound <em>too</em> bad, however the MNIST is so easy for this model that it can recieve almost 100% test accuracy after just 1 epoch. Additionally, the model could theortically retain it’s accuracy if it learned to unpermute the inputs at an earlier layer.</p>
+
+<p>Before I show you how the model performs when trained with EWC, i’ll use a different baseline, the \( L_2 \) distance from the old parameters.<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup></p>
+
+<p><img src="/assets/images/forget-curve-l2.png" alt="Training Curve With L2" /></p>
+
+<p>Catastrophic forgetting is prevented at the cost of performance on future tasks.<sup id="fnref:5" role="doc-noteref"><a href="#fn:5" class="footnote" rel="footnote">5</a></sup> Not good enough! EWC is much more successful.</p>
+
+<p><img src="/assets/images/forget-curve-ewc.png" alt="Training Curve With EWC" /></p>
+
+<p>This is drastically better than <em>both</em> prior curves! The model retains above 80% accuracy on all tasks! This seems to be a miracle! Why isn’t EWC more popular?!</p>
+
+<h1 id="caveats">caveats</h1>
+
+<p>Firstly, I just want to say equation \(  \eqref{loglike} \) is wrong. Bayes rule does not allow you to split the conditional like this. The correct form would be<sup id="fnref:6" role="doc-noteref"><a href="#fn:6" class="footnote" rel="footnote">6</a></sup></p>
+
+<p>\[ -\ln P(\boldsymbol{\theta} | \mathcal{D}) = -\ln P(\boldsymbol{\theta} | \mathcal{D}_A) - \ln P(\boldsymbol{\theta} | \mathcal{D}_B) \label{correctloglike} \tag{6} \]</p>
+
+<p>This is a very subtle difference, but one that caused me a great headache when reading this paper.</p>
+
+<p>Next, the paper layers approximation upon approximation. Using the 2nd order taylor expansion of the loss function? A (good) approximation. Using the Fisher Information Matrix to approximate the Hessian needed for the 2nd order expansion? An (excellent) approximation. Using the Observed Fisher Information Matrix to approximate the <em>actual</em> Fisher Information Matrix? Another (very good) approximation. However, even after all that approximating, we <em>still</em> take a (this time really bad) final approximation of the FIM as a diagonal matrix. In fact the <a href="https://core.ac.uk/download/pdf/216127203.pdf">paper they cite</a> for the idea of using the FIM <em>explicitly warns</em> that the diagonal of the FIM isn’t good enough!</p>
+
+<blockquote>
+  <p>It is important, for the success of
+  this Bayesian method, that the <strong>off-diagonal terms of the Hessian should
+  be evaluated</strong>. Denker et al.’s method can do this without any additional
+  complexity. The <strong>diagonal approximation is no good</strong> because of the strong
+  posterior correlations in the parameters.</p>
+</blockquote>
+
+<p>“Okay Femi,” I hear you say. “EWC is built on shoddy approximations, whatever. Explain why it works so well?”</p>
+
+<h2 id="why-does-ewc-work-so-well">why does ewc work so well?</h2>
+
+<p>Emprically <a href="https://arxiv.org/abs/2004.14340">Singh and Alistarh</a> observed that the FIM is a) a decent local approximation of the loss function, and b) mostly sparse off of the diagonal. That is not to say that the off diagonal terms wouldn’t help considerably – they would. I interpret these finding as, go ahead and use the diagonal if you <em>really</em> have too. It’s better than nothing.</p>
+
+<p>Additionally, permuted MNIST is actually very easy. It’s a <em>domain incremental task</em> meaning that the input distribution might change, but the output distribution won’t. Most methods for continual learning don’t struggle on permuted MNIST.</p>
+
+<p>A much harder task is <em>Split MNIST</em>. Split MNIST doesn’t have \(  n! \) possible tasks to generate, however the paper that introduced Split MNIST (<a href="https://arxiv.org/pdf/1810.12488">Hsu et al., 2018</a>) argues that Split MNIST is more representative of tasks we might encounter in the real world. After training one just <em>one</em> more task than I trained on in my replication, the authors report EWC has an average <em>global accuracy</em> (accross all tasks) of 58.85%…</p>
+
+<p>Compare this to the ~90% global accurcay we had on permuted MNIST. So in conclusion, …it kind of doesn’t work.</p>
+
+<h2 id="femi-ive-never-even-heard-of-continual-learning">femi, i’ve never even heard of continual learning</h2>
+
+<p>Yeah, and for good reason. For larger models, one might argue it doesn’t matter (see <a href="https://gwern.net/scaling-hypothesis#blessings-of-scale">Blessings of Scale</a>). These models are so large and are pre-trained on so much data that they truly do not need continual learning. In fact, continual learning doesn’t need continual learning!</p>
+
+<p>Naive Rehersal (just mixing in old training data) beats out <em>every single continual learning technique we have</em>!<sup id="fnref:7" role="doc-noteref"><a href="#fn:7" class="footnote" rel="footnote">7</a></sup> One might argue that the whole field of continual learning is beyond useless. It’s a collection of researchers working with their hands tied behind their backs and making progress there. I would agree for the most part.</p>
+
+<h1 id="model-pruning">model pruning</h1>
+
+<p>Don’t get me wrong, CL techniques cannot work at a large scale, but they admit a useful application, <em>model pruning</em>. The (diagonal) Fisher Information Matrix allows you to (roughly) see which parameters are are important to performance, and which ones less so.</p>
+
+<p>We can use this to prune the original network. Lets go with the definition of \(  F \) used in \(  \eqref{finloas} \). Define \(  F_{max} \) as the largest element in \(  F \) and \(  F_{min} \) as the smallest. We can set a threshold \(  T \) such that</p>
+
+<p>\[  T = k(F_{max} - F_{min}) + F_{min} \]</p>
+
+<p>Where \(  k \) is some <em>pruning constant</em> on the interval \(  [0, 1] \). All weights with a corresponding FIM value that falls below \(  T \) are set to zero.</p>
+
+<p>Measure <em>performance</em> of the pruned model as the relative accucuracy when compared to the base model. Formally,</p>
+
+<p>\[ \textrm{Performance} = \frac{\textrm{Pruned Model Accuracy}}{\textrm{Base Model Accuracy}} \].</p>
+
+<p><img src="/assets/images/perf-vs-sparse.png" alt="Performance vs Model Activity" /></p>
+
+<p>From the above graph, we see that the model maintains pretty much perfect performance until ~30% activity. This is crazy to me! With only 30% of the weights we get most of the performance back. To go a little further we can visualize which weights are active and which weight aren’t.</p>
+
+<p><img src="/assets/images/20-act-ewc.png" alt="20% Activated Model" /></p>
+
+<p>Above is the sparsity graph of the model when ~20% of the weights are non-zero and 92% percent of performance is acheived. The first thing that sticks out is the strong importance fo the biases and the last weight vector. The first two weight matricies are <em>incredibly</em> sparse, and sparse in a strange way.</p>
+
+<p>We see these horizontal and vertical banding that happens across the network. It’s my personal theory that this is caused by blank space in the input image. The model doesn’t really need to read data at these points, thus the weights become redundant.</p>
+
+<h1 id="conclusions--meta-lessons">conclusions &amp; meta-lessons</h1>
+
+<p>So to recap, EWC prevents models from forgetting how to perform well on old data by quadratically approximating the loss on said old data around a minimum. This is of limited use for continual learning, but interesting for model pruning.</p>
+
+<p>Was it worth it to replicate this paper? On the whole, I’d say yes! I learned a ton of math on the way and got a few ideas for further interpretability reserach using model pruning! That being said, continual learning won’t take us to AGI, it’s usefulness in smaller models on limited tasks does not make up for the fact that it’s utterly useless for larger models. But it has yet to be investigated as a tool for MLP interpretability. I enjoyed doing this replication, and I hope you enjoyed reading it.</p>
+
+<hr />
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>Well perfomring on the first dataset <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>Technically, this is not true. The FIM is calculated using the log-likelihood, but here we use the log-posterior. I say FIM becuase that’s what the paper uses. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>Don’t worry, I know this is just an approximation, and wikiperida is not my only source. Equation 6.1 from <a href="https://core.ac.uk/download/pdf/216127203.pdf">McKay, 1992</a> also gives this approximation. <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>I use the same value of \( \lambda \) for fair comparision. It’s very much possible that a lower \( \lambda \) could improve performance, though i’m confident not by much. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:5" role="doc-endnote">
+      <p>I’m not sure why the gap between the first task and all other tasks is so large, or why it doesn’t see an accuracy drop. If I had to guess, it’s because L2 is crippling the model when training on future tasks, making them <em>more</em> susceptible to catastrophic forgetting. <a href="#fnref:5" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:6" role="doc-endnote">
+      <p>Why? Like I said, bayes rule doesn’t let you split the conditional like they did in \(  \eqref{loglike} \), the likelihood still has to be calculated across the entire dataset. Assuming \(  \mathcal{D}_A \space \&amp; \space \mathcal{D}_B \) are independant. \(  \eqref{correctloglike} \) holds true. <a href="#fnref:6" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:7" role="doc-endnote">
+      <p>See <a href="https://arxiv.org/pdf/1810.12488">Hsu et al., 2018</a>. To my knowledge, there hasn’t been a large improvement in CL techniques since 2018. <a href="#fnref:7" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+      <div class="flex justify-around my-5"><a href="/2024/04/07/the-interpretability-technique-no-one-is-talking-about.html"> &laquo; prev</a> <a href="/">home</a> <a href="/2024/07/05/deep-learning-from-scratch-in-scratch.html"> next &raquo; </a></div>
+    </div>  
+  </div>
+  <footer class="py-2">
+    <p class="text-center"> <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a href="https://x.com/biggieboijosh" class="text-blue-500 hover:text-blue-700">x</a> 
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+</body>
+</html>

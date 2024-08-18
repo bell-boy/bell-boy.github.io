@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--<link rel="stylesheet" href="/assets/css/tailwind.css">-->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/code-style.css">
+  <title>the interpretablity technique no one is talking about</title>
+</head>
+<body class="flex min-h-screen flex-col items-center w-screen">
+  <div class="py-5 flex-grow flex flex-col items-center" >
+    <h1 class="text-5xl font-bold text-gray-600 mb-2 w-[60%]">the interpretablity technique no one is talking about</h1>
+    <div class="content p-3 w-[60%] ">
+      <ul id="toc" class="section-nav">
+<li class="toc-entry toc-h2"><a href="#non-linear-linearity">non linear-linearity</a></li>
+<li class="toc-entry toc-h1"><a href="#refined-representations">refined representations</a></li>
+<li class="toc-entry toc-h1"><a href="#locality">locality</a></li>
+<li class="toc-entry toc-h1"><a href="#so-does-it-work">so… does it work?</a></li>
+<li class="toc-entry toc-h1"><a href="#next-steps">next steps</a></li>
+</ul>
+      <p><em>Yes, I am aware I’m three weeks behind on posts. It’s been a busy couple of weeks</em></p>
+
+<p><a href="https://arxiv.org/pdf/1806.07538.pdf">This</a> is the coolest paper I’ve seen in a while, yet I’ve never heard of the technique. It’s not mentioned on blog posts about AI interpretability/AI safety, and I’ve found very few papers trying to build on the technique, but it seems like a very promising approach.</p>
+
+<p>It’s an intrinsic method, meaning that it achieves interpretability goals by making changes to model architecture, not by interpreting weights or activations.</p>
+
+<h2 id="non-linear-linearity">non linear-linearity</h2>
+
+<p>The paper starts by outlining what it <em>really</em> means to have an interpretation of a model.</p>
+
+<ol>
+  <li>Explicitness: How easy is it to understand the interpretations of the model</li>
+  <li>Faithfulness: How faithful are the interpretations of the model to what’s actually going on inside of it</li>
+  <li>Stability: How consistent are explanations for neighboring examples<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup></li>
+</ol>
+
+<p>We actually already have a model which has explanations that satisfy all these criteria, and is still widely used to this day! The humble <strong>Linear Model</strong>. It’s coefficient vector \(\pmb{\theta}\) tells you <em>exactly</em> how each input contributed to the output of the model and is <em>identical</em> for each input.</p>
+
+<p>But for most classification and regression tasks, the linear model is shit.</p>
+
+<p>The problem is, most functions we care about aren’t linear. Now they might be <em>locally</em> linear, the same way that zooming in really close to a graph kind of looks like a straight line. But the formula \(f(\boldsymbol{x}) = \boldsymbol{\theta}^T\boldsymbol{x}\) can only ever <em>globally</em> be a straight line (or an \(N\) dimensional analogue), even as the function may do wildly non-linear things.</p>
+
+<p>However, what if we just train a model to compute \(\pmb{\theta}\) for each input? The authors of the paper propose using a Deep Neural Network they call \(\pmb{\theta}(\pmb{x})\) to be the coefficients of the linear model for a given input.</p>
+
+<p>Intuitively, this feels like trying to approximate the derivative of some underlying function instead of the actual function.<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup></p>
+
+<p>However, there’s still one big problem. The dimensionality of some problems is mind boggling. Even if we knew how much each pixel contributed to the overall output, how much would we care?</p>
+
+<h1 id="refined-representations">refined representations</h1>
+
+<p>Our model is theoretically more interpretable, but it tells us how much each <em>pixel</em> contributes to the final answer. Frankly, these kind of pixel level shallow attribution techniques have been shown to be <a href="https://arxiv.org/pdf/1906.07983.pdf">not that robust</a> or <a href="https://www.alignmentforum.org/s/a6ne2ve5uturEEQK7/p/f8nd9F7dL9SxueLFA">all that useful</a>. Yet the authors of the paper go one step further. They replace \(\pmb{x}\) with the latent space of a <em>sparse auto encoder</em>. The auto encoder part ensures that all the data of the original is present in compressed form, while sparsity is meant to ensure the features we find are meaningful.</p>
+
+<p>So now our ‘roided up linear function has two new parts. A compression function that turns high dimensional data into low dimensional interpretable concept data that we can then use as inputs to our linear function (we call the compressor/encoder of the autoencoder \(h(x)\)<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote" rel="footnote">3</a></sup>. It now looks like this</p>
+
+<p>\[f(x) = \theta(x)^Th(x)\]</p>
+
+<p> But wait, there’s more!<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup></p>
+
+<h1 id="locality">locality</h1>
+
+<p>We need to ensure our functions are locally interpretable. In layman’s terms, we need to ensure that for similar inputs, our functions generate similar interpretations.</p>
+
+<p>The authors achieve this by a trying to ensure that a function is <em>locally difference bounded</em> (see definition 3.2 in the paper for the full definition of this). Roughly meaning that for two close concepts, the distance between outputs is always less than the distance between inputs (multiplied by some arbitrary, <em>locally-consistent</em> constant factor).</p>
+
+<p>To enforce this the authors define a regularization term </p>
+
+<p>\[\mathcal{L}_\theta(f(x)) = \lVert \nabla_x f(x) - \theta(x)^TJ_x^h(x) \rVert\]</p>
+
+<p> Which we try to minimize when training.</p>
+
+<p>I will admit. The vector calculus they used to derive this function went over my head a bit, however, it makes intuitive sense. Our hyper powered linear function is kind of like the derivative of our function with respect to our input vector \(h(x)\). Using the chain rule, they <em>indirectly</em> measure the similarity of this function to the derivative of the function with respect to the inputs. Kind of a bullshit explanation, but I’ll have to comeback and wrestle with the math more later.</p>
+
+<h1 id="so-does-it-work">so… does it work?</h1>
+
+<p>Yes! Kind of.</p>
+
+<p>The problem with using auto encoded features is that we have to interpret these features. Which is tricky. The authors look for dataset examples that maximally activate one feature (called prototypes) and then try to figure out the commonality between them.</p>
+
+<p><img src="https://39669.cdn.cke-cs.com/rQvD3VnunXZu34m86e5f/images/9dc62b55dfd214c7ad9e7db70e0f141be6f502fdff68e5ce.png" alt="" /></p>
+
+<p>For this six concept model trained to classify digits on MNIST, these prototypes are most representative of each of the generated concepts. At least for MNIST, this looks kind like something! Concept 1 seems to be straightness, and Concept 2 looks like roundness, but what’s Concept 3? Sevenness? So it this might be the limiting factor of SENNs, but still, I expected it to get a lot more attention than it currently gets.</p>
+
+<p>Less interestingly to me (but still very interesting), the authors of the paper propose 2 quantitative ways to evaluate interpretability methods.</p>
+
+<p>Measure one evaluates methods by how important they say different features are to the model. They remove a feature and compare the drop in probability of the answer to the interp. method’s prediction of that feature’s importance.</p>
+
+<p>Measurement two estimates the Lipschitz constant around a particular input. A lower Lipschitz constant means that explanations are more tightly bounded by their inputs. Thereby becoming more stable.<sup id="fnref:5" role="doc-noteref"><a href="#fn:5" class="footnote" rel="footnote">5</a></sup></p>
+
+<p>By the authors’ own metrics, SENN beats out most methods for achieving interpretability.</p>
+
+<h1 id="next-steps">next steps</h1>
+
+<p>I would’ve expected people to have already been all over this. You wanted concept vectors? Here is a vector full of concepts! You want to understand <em>why</em> your model made a certain choice? Just take a peek at the coefficient vector dude. You want benchmarks and evaluations for interpretability methods? The paper literally provides quantitative ways to evaluate methods on two of the major criteria it posed. Yet there seems to be vary little attention around this paper.</p>
+
+<p>So either A, I’m missing some Huge Obvious Flaw. Or B, there might need to be more work into seeing how competitive SENNs can be against plain jane NNs. How might one build a transformer out of SENNs? How did the authors perform classification with a SENN? If they used a Softmax, does the Softmax make interpreting things weird? How would trying to stack multiple SENNs work? How would this hold up against the other techniques Casper et. al used for <a href="https://arxiv.org/abs/2302.10894">detecting trojans</a>?</p>
+
+<p>However, I’m skeptical on the idea of playing with SENNs for a couple months. I think I’ll get more value out of just reading more.</p>
+
+<p>I’m interested in your thoughts!</p>
+
+<hr />
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>From what I understand, the motivation for this criterion is so that similar points have similar interpretations. However, think of a function like the sigmoid. There, some points that are close together just have different drastically different outputs. I’m skeptical on the value of this one. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>It isn’t obvious to me why this would be true. But I plan to implement the architecture on a lower dimensional problem and find out how valid this line of thinking is. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>h(x) doesn’t <em>have</em> to be an auto-encoder. The authors also suggest expert-generated features. However, from <a href="http://www.incompleteideas.net/IncIdeas/BitterLesson.html">bitter lesson</a> style intuitions, I doubt that expert-generated features are the way to go for long term, scalable performance.  <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>Quite a bit more. But I choose cover the parts I find to be the most interesting. I recommend reading the full paper. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:5" role="doc-endnote">
+      <p>This measurement actively peaks my interest. Could a high Lipschitz constant for a <em>model</em> indicate a vulnerability to adversarial attacks? <a href="#fnref:5" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+      <div class="flex justify-around my-5"><a href="/2024/03/11/on-learning.html"> &laquo; prev</a> <a href="/">home</a> <a href="/2024/07/03/implementing-ewc.html"> next &raquo; </a></div>
+    </div>  
+  </div>
+  <footer class="py-2">
+    <p class="text-center"> <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a href="https://x.com/biggieboijosh" class="text-blue-500 hover:text-blue-700">x</a> 
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--<link rel="stylesheet" href="/assets/css/tailwind.css">-->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/code-style.css">
+  <title>Epileptic Uncertainty Framework Technical Report</title>
+</head>
+<body class="flex min-h-screen flex-col items-center w-screen">
+  <div class="py-5 flex-grow flex flex-col items-center" >
+    <h1 class="text-5xl font-bold text-gray-600 mb-2 w-[60%]">Epileptic Uncertainty Framework Technical Report</h1>
+    <div class="content p-3 w-[60%] ">
+      <ul id="toc" class="section-nav">
+<li class="toc-entry toc-h1"><a href="#introduction">Introduction</a></li>
+<li class="toc-entry toc-h1"><a href="#methodology">Methodology</a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#dataset">Dataset</a></li>
+<li class="toc-entry toc-h2"><a href="#epileptic-uncertainty-framework">Epileptic Uncertainty Framework</a></li>
+<li class="toc-entry toc-h2"><a href="#model">Model</a></li>
+<li class="toc-entry toc-h2"><a href="#training">Training</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#training-the-gaussian-head">Training the Gaussian Head</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#results">Results</a></li>
+<li class="toc-entry toc-h1"><a href="#conclusion-and-discussion">Conclusion and Discussion</a></li>
+</ul>
+      <p>I recently spent a couple months working on a research project. The goal was to submit to NeurIPS’ new High School track. I’d never done something like this, and I learned a lot about doing ML research by trying.</p>
+
+<p>I’ll split this post into two parts. This part will be more technical, describing the results. I really don’t feel like writing another research paper about this, so this blog post will have to do.</p>
+
+<p>The next part will be about the journey, describing small tricks and meta-skills I learned about doing ML research. I think that post will be helpful if you’re like I was, young and excited to try research.</p>
+
+<h1 id="introduction">Introduction</h1>
+
+<p>The theme of NIPS’ HS track was something like “ML for social good”, asking that we write a paper applying ML to some socital problem. A couple of friends of mine had recently been working on a seizure prediction project, so we decided to try adapting that.</p>
+
+<p>The main problem that seizure prediction is trying to solve is that around 20-40% of people with epilepsy have <em>refactory</em> epilepsy. Meaning, drugs don’t work well to treat them. There are many options for treatment, but seizure prediction aims to improve the quality of life of the afflicted, by at least telling them in advance that a seizure will occur. This way, they can receive preemptive treatment or get somewhere safe to have the seizure.</p>
+
+<p>The main way seizures are predicted is under what I’ll call the <em>Standard Framework</em> (SF). Under the SF, seizure prediction takes electroencephalogram (EEG) data and uses machine learning to predict if a seizure will happen in a window of time specified by two numbers. The <em>Seizure Prediction Horizon</em> (SPH) and the <em>Seizure Occurance Period</em> (SOP).</p>
+
+<p>When we make a prediction, we’re saying that within SOP minutes, but not before SPH minutes, a seizure will occur. These two numbers are hyper parameters, and are fixed before training. This makes seizure prediction under the SF a classification problem.</p>
+
+<p class="text-center">
+  <img src="/assets/images/Standard-Framework.png" style="" />
+  <em>Example from Troung et al.</em>
+</p>
+
+<p>Research has suggested that there is no optimal SPH/SOP for all people.<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup> Instead, these numbers vary from paitent to paitent.</p>
+
+<p>In this work, I propose the Epileptic Uncertainty Framework (EUF). In the EUF we keep the SOP, but redefine it as the Maximum Prediction Horizon (MPH). Additonally, we predict a <em>distribution</em> over possibile times that the seizure will occur. Making seizure prediction under the EUF a classification <em>and</em> regression problem.</p>
+
+<p>I acheive similar classification results to prior work, and very calibrated regression distributions, as seen by brier score. By training the model to predict a distribution, we go from being able to answer the question, “What is the probablity I will have a seizure in this specific time window not set by me” to being able to answer, “What is the probablity I’ll have a seizure within x minutes”, where x is controlled by the paitent.</p>
+
+<h1 id="methodology">Methodology</h1>
+
+<h2 id="dataset">Dataset</h2>
+
+<p>I use the CHBMIT seizure dataset.<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup> The dataset consists of &gt;300 hours of EEG data over 23 patients, with labeled seizure start and end times.</p>
+
+<p>The EEG data has 23 channels and is broken up into multiple files that are around 1 hour long. In between each of the files are gaps that are on average around ~3 seconds long.</p>
+
+<p>I draw samples that are ten minutes long. To extend the use of the dataset, I draw <em>overlapping</em> samples. When a sample crosses over a file gap, I just fill it with zeros. I run a filtering process on the whole dataset to filter out samples that are more than 3% zeros.</p>
+
+<p>The seizure signals are very weak, so I multiply them by \( 10^3 \) and run them through the Short-Time Fourier Transform (STFT). STFT turns the raw signals into spectrograms, which gives the model time and frequency information. In theory, the model can implement it’s own STFT, but I find that you need an extra OOM of parameters to do the job of the STFT.</p>
+
+<p>The end result of that is a large 23 channel image which I resize into a 256 by 256 image. Finally a tensor of shape \( (23, 256, 256) \) is passed to the model.</p>
+
+<p>For data with seizure that happen later than the MPH, the label is set to \( \infty \), otherwise, it’s set for the time between the end of the data and the next seizure. All the non-\(\infty\) data is scaled to have variance one (and shifted to have mean 0 in the case of heteroskedastic regression).</p>
+
+<p>I only train on a single patient due to not wanting to work on this project for another week.</p>
+
+<h2 id="epileptic-uncertainty-framework">Epileptic Uncertainty Framework</h2>
+
+<p>Under EUF, the model is represented as a function \( f \) which maps <em>data</em> to <em>distribution parameters</em>. What \( f \) is approximating is the conditional distribution \( p(t | \mathbf{X}) \). In english, “the probablity density of a seizure happening in exactly \( t \) seconds from now given the EEG data”</p>
+
+<p>We assume that the conditional distribution is from a family of distributions \( \mathcal{F} \). Each distribution in this family is uniquely defined by a parameter vector \( \mathbf{\theta} \). So our model will take in the EEG data \( \mathbf{X} \) and return the parameter vector \( \mathbf{\theta} \) specifying the distribution which we’ll use to approximate the conditional distribution.</p>
+
+<p>For this task, we assume that epliepsy is a <em>possion process</em> and model the distribution over the next seizure time as an <em>exponential distribution</em>. The parameter vector is just a single value \(\lambda\) and the distribution is</p>
+
+<p>\[ p’(t) = \lambda \exp(-\lambda t) \]</p>
+
+<p>However, to make training easier, we use the MPH to bound how far the model has to predict. So the model actually outputs the vector</p>
+
+<p>\[
+\begin{bmatrix}
+  \omega &amp; \mathbf{\theta}
+\end{bmatrix} 
+\]</p>
+
+<p>\(\mathbf{\theta}\) is still the same parameter vector as before, but $\omega$ is the probablity that a seizure happpens in the MPH at all. Phrased mathematically</p>
+
+<p>\[ p(\Omega) = \omega \]</p>
+
+<p>Where \(\Omega\) is the event where a seizure occurs within the MPH.</p>
+
+<p>Now, instead of approximating the conditional, we now approximate</p>
+
+<p>\[ p(t | \mathbf{X}, \Omega) \]</p>
+
+<p>In english, “the probability density that a seizure happens in \( t \) seconds given the data and that a seizure occurs within the MPH.”</p>
+
+<p>So the probablity density at \( t \) is</p>
+
+<p>\[ p(t | \mathbf{X}, \Omega)p(\Omega) \]</p>
+
+<h2 id="model">Model</h2>
+
+<p>I use a model very similar in archecture to AlexNet. I adjusted in the nubmer channels that had to pass through the model, and some filter sizing. I also make the model <em>Multi-Head</em>. Meaning for each parameter in the output vector, a seperate set of MLP layers is set to extract different information from the shared layers without interfering with each other.</p>
+
+<p class="text-center">
+  <img src="/assets/images/multihead.png" style="" />
+  <em>Example of Multiple head model from Li and Hoiem.</em>
+</p>
+
+<p>I find that single head training doesn’t work very well. The model has to struggle to maintain performance on all of the tasks. The classification head is trained seperately from those that describe the conditional distribution.</p>
+
+<h2 id="training">Training</h2>
+
+<p>To train the model, I use the Maximum Likelihood Objective. We’re given a dataset \( \mathcal{D} = {(\mathbf{X}_i, t_i)}_N \) consisting of \( N \) sameples which we assume are independent of each other, but identically distributed.</p>
+
+<p>The likelihood is equal to</p>
+
+<p>\[ \prod_{i=1}^N p’(t | \mathbf{X}, \Omega)p’(\Omega) \]</p>
+
+<p>To make maximizing easier, we move to log space, and, as is tradition, make everything negaitve and switch to minimizing. For the exponential distribution, this means that the optimization criterion \(\mathcal{L}\) is</p>
+
+<p>\[ \mathcal{L}(\mathcal{D}) = \sum_{i=1}^N \lambda t_i - \ln \lambda - \ln \omega \]</p>
+
+<p>Out of curiosity, I tried a different distribution. The Normal distribution. There isn’t really a good argument to use this distribution though, I just found interesting results when training. The Normal criterion is</p>
+
+<p>\[ \mathcal{L}_{Normal}(\mathcal{D}) = \sum_{i=1}^N \frac{(\mu - t_i)^2}{\sigma^2} + \frac{\ln 2 \pi \sigma^2}{2} - \ln \omega \]</p>
+
+<p>A major problem when using multiple heads is <em>Catastrophic Forgetting</em>. The performance of one head goes down as the other head goes up. Training changes the shared layers without regard for the other head. To minimize this, I use the regularization provided in the paper <em>Learning Without Forgetting</em> by Li and Hoiem.<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote" rel="footnote">3</a></sup></p>
+
+<p>It’s an additional term added to the loss that prevents the predicted distribution of the classification head from moving to far from it’s original state, while still being flexible enough to learn the new task. The loss is simply</p>
+
+<p>\[ D_\textrm{KL}(\omega_{new} || \omega_{old}) \]</p>
+
+<p>In english, “The KL divergence between the distributions predicted by the new and previous model”</p>
+
+<p>Note that is distribution is the <em>classification distribution</em> denoted by \( \omega \). It’s a Boltzmann distribution over 2 states: a seizure will happen within the MPH, or not.</p>
+
+<p>This loss works very well to prevent Catastrophic Forgetting, without any hyperparameter tuning!</p>
+
+<p>When training the regression distribution I only train on positive samples. To prevent the classification head from updating I stop gradient flow from the MLE term of the optimization criterion.</p>
+
+<h3 id="training-the-gaussian-head">Training the Gaussian Head</h3>
+
+<p>When the family of distributions is Gaussian with differing variance, the regression is called <em>heteroskedastic</em>. Training heteroskdastic models can be hard, because of the first term in the loss function. Stirn et al. Identify this in their paper <em>Faithful Heteroskedastic Regression in Nueral Networks</em><sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup> and propose two measures to resolve it.</p>
+
+<p>First, prevent graident flow from the varience head (the \( \sigma^2 \) term) to the shared layers. Next, to remove the influence of the varience head, scale the gradient of the regression head by \( \sigma^2 \) during the backward pass. These two methods are necessary to get acceptable performance on the regression head.</p>
+
+<p>Specific training details can be found in the attached colab notebook.</p>
+
+<h1 id="results">Results</h1>
+
+<p>First, to evaluation classification performance, I use three metrics. AUROC, False Positive Rate per Hour (FPR/H), and Sensitivity. These are standard throught the seizure prediction field.</p>
+
+<p>Next, to evaulate regression performance, I use another three metrics. RMSE, Briar Score, and Negative Log Likelihood (Loss).</p>
+
+<p>For those unfamilar, the Briar Score is a common forcasting metric ranging from 0 to 1. The equation for it is as follows</p>
+
+<p>\[ \textrm{BS} = \frac{1}{N} \sum_{i=1}^N (l_i - p’_i)^2 \]</p>
+
+<p>Where \( l_i \) is 1 if a seizure occurs within a given time interval, and \( p_i’ \) is the probablity predicted of a seizure happening in that interval. A Briar score of 0 indicates perfect calibration, while a Briar Score of 1 indicates the worst possible performance.</p>
+
+<p>To get the time intervals to make predicitons over, I create a range of confidence intervals for the given distribution, then I multiply the confidence level by the probablity predicted by the classification head to get the model’s probablity for a seizure happening there.</p>
+
+<p>I perform 5 fold cross validation with a holdout test set to determine these metrics.</p>
+
+<p>Additionally, I also plot calibration curves. These are a more qualitative way to see if the predictions made by the distribtuion can be trusted and provide an intutive sense of model performance.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Regression type</th>
+      <th>AUROC ⬆️</th>
+      <th>FPR/H ⬇️</th>
+      <th>Sensitivity ⬆️</th>
+      <th>RMSE ⬇️</th>
+      <th>Briar ⬇️</th>
+      <th>Loss ⬇️</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gaussian</td>
+      <td>\( 0.987 \pm 0.004 \)</td>
+      <td>\( 0.386 \pm 0.090 \)</td>
+      <td>\( 0.955 \pm 0.049 \)</td>
+      <td>\( 0.962 \pm 0.064 \)</td>
+      <td>\( 0.130 \pm 0.020 \)</td>
+      <td>\( 0.150 \pm 0.040 \)</td>
+    </tr>
+    <tr>
+      <td>Exponential</td>
+      <td>\( 0.983 \pm 0.007 \)</td>
+      <td>\( 0.462 \pm 0.219 \)</td>
+      <td>\( 0.935 \pm 0.076 \)</td>
+      <td>\( 1.058 \pm 0.174 \)</td>
+      <td>\( 0.141 \pm 0.030 \)</td>
+      <td>\( 1.63 \pm 0.208 \)</td>
+    </tr>
+    <tr>
+      <td>Turong et al.<sup id="fnref:5" role="doc-noteref"><a href="#fn:5" class="footnote" rel="footnote">5</a></sup> (SF)</td>
+      <td>\( 85.7 \pm 0.000 \)</td>
+      <td>\( 0.24 \pm 0.000 \)</td>
+      <td>N/A</td>
+      <td>N/A</td>
+      <td>N/A</td>
+      <td>N/A</td>
+    </tr>
+    <tr>
+      <td>Rasheed et al.<sup id="fnref:6" role="doc-noteref"><a href="#fn:6" class="footnote" rel="footnote">6</a></sup> (SF)</td>
+      <td>N/A</td>
+      <td>\( 0.05 \)</td>
+      <td>\(  96 \)</td>
+      <td>N/A</td>
+      <td>N/A</td>
+      <td>N/A</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The arrows indicate whether a lower or higher score is better.</p>
+
+<div class="text-center">
+  <div class="flex w-full overflow-hidden flex-row justify-center">
+    <img src="/assets/images/exp-1.png" class="min-w-0" />
+    <img src="/assets/images/exp-2.png" class="min-w-0" />
+    <img src="/assets/images/exp-3.png" class="min-w-0" />
+  </div>
+  <em>Calibration curves for the Exponential model</em>
+</div>
+
+<div class="text-center">
+  <div class="flex w-full overflow-hidden flex-row justify-center">
+    <img src="/assets/images/gauss-1.png" class="min-w-0" />
+    <img src="/assets/images/gauss-2.png" class="min-w-0" />
+    <img src="/assets/images/gauss-3.png" class="min-w-0" />
+  </div>
+  <em>Calibration curves for the Gaussian model</em>
+</div>
+
+<p>These classification results are very similar to the work of Troung et al.<sup id="fnref:5:1" role="doc-noteref"><a href="#fn:5" class="footnote" rel="footnote">5</a></sup> and Rasheed et al.<sup id="fnref:6:1" role="doc-noteref"><a href="#fn:6" class="footnote" rel="footnote">6</a></sup>, who also use a similar model archetecture, and acheive results out of our error bars only for FPR/H.</p>
+
+<p>As we see from the calibration curves and briar scores, when the model says that there’s a \( p \) pecent chance of a seizure within their specificed time window, there usually is a \( p \) percent chance, though the model tends towards over-confidence.</p>
+
+<p>Gaussian and Exponential regression don’t differ significantly in their performance. I will note that the Exponential model was much harder to train, and required a little bit of tuning hyper parameters. I didn’t tune much however, so this might explain the weaker performance.</p>
+
+<p>Where the two families do differ though, is their interpretation. The distribution given by the Gaussian is best interpreted as a window of variable length. “There is a \( p \) percent chance that a seizure will take place between times \( a \) and \( b \).” However, there’s no good reason to assume that epilepsy is a Gaussian process.</p>
+
+<p>The interpretation of the Exponential is much more convient. “The probablity that you will have a seizure within \( t \) minutes is \( p \).” This warning time can be adjusted as needed to suit the patient.</p>
+
+<h1 id="conclusion-and-discussion">Conclusion and Discussion</h1>
+
+<p>Despite interesting inital results showing that the EUF is a strong alternative to the SF, there are many limitations to this work.</p>
+
+<ol>
+  <li>I only trained on one patient</li>
+  <li>I did no hyperparameter tuning</li>
+  <li>The RMSE is oddly close to the varience of the data</li>
+  <li>CHBMIT data is limited in quantity.</li>
+  <li>The model is ~80M parameters, and uses 23 channels of seizure data. How can we use a smaller model and train on less channels?</li>
+</ol>
+
+<p>Future directions include</p>
+
+<ol>
+  <li>Multi-Patient Pretraining &amp; Paitent Fine-Tuning</li>
+  <li>EUF without the MPH hyperparameter.</li>
+  <li>Different model architectures and thier effect on performance.</li>
+  <li>Model distillation, and few channel prediction on edge devices.</li>
+</ol>
+
+<p>Thank you for reading.</p>
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>Bandarabadi, Mojtaba, Jalil Rasekhi, César A. Teixeira, Mohammad R. Karami, and António Dourado. “On the Proper Selection of Preictal Period for Seizure Prediction.” Epilepsy &amp; Behavior 46 (May 1, 2015): 158–66. https://doi.org/10.1016/j.yebeh.2015.03.010. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>Ali Shoeb. Application of Machine Learning to Epileptic Seizure Onset Detection and Treatment. PhD Thesis, Massachusetts Institute of Technology, September 2009. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>Li, Zhizhong, and Derek Hoiem. “Learning without Forgetting.” arXiv, February 14, 2017. https://doi.org/10.48550/arXiv.1606.09282. <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>Stirn, Andrew, Hans-Hermann Wessels, Megan Schertzer, Laura Pereira, Neville E. Sanjana, and David A. Knowles. “Faithful Heteroscedastic Regression with Neural Networks.” arXiv, December 18, 2022. https://doi.org/10.48550/arXiv.2212.09184. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:5" role="doc-endnote">
+      <p>Truong, Nhan Duy, Anh Duy Nguyen, Levin Kuhlmann, Mohammad Reza Bonyadi, Jiawei Yang, Samuel Ippolito, and Omid Kavehei. “Convolutional Neural Networks for Seizure Prediction Using Intracranial and Scalp Electroencephalogram.” Neural Networks 105 (September 1, 2018): 104–11. https://doi.org/10.1016/j.neunet.2018.04.018. <a href="#fnref:5" class="reversefootnote" role="doc-backlink">&#8617;</a> <a href="#fnref:5:1" class="reversefootnote" role="doc-backlink">&#8617;<sup>2</sup></a></p>
+    </li>
+    <li id="fn:6" role="doc-endnote">
+      <p>Rasheed, Khansa, Junaid Qadir, Terence J. O’Brien, Levin Kuhlmann, and Adeel Razi. “A Generative Model to Synthesize EEG Data for Epileptic Seizure Prediction.” arXiv, December 1, 2020. http://arxiv.org/abs/2012.00430. <a href="#fnref:6" class="reversefootnote" role="doc-backlink">&#8617;</a> <a href="#fnref:6:1" class="reversefootnote" role="doc-backlink">&#8617;<sup>2</sup></a></p>
+    </li>
+  </ol>
+</div>
+
+      <div class="flex justify-around my-5"><a href="/2024/07/05/deep-learning-from-scratch-in-scratch.html"> &laquo; prev</a> <a href="/">home</a> </div>
+    </div>  
+  </div>
+  <footer class="py-2">
+    <p class="text-center"> <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a href="https://x.com/biggieboijosh" class="text-blue-500 hover:text-blue-700">x</a> 
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+</body>
+</html>

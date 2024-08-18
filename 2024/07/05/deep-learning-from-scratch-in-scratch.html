@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--<link rel="stylesheet" href="/assets/css/tailwind.css">-->
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/code-style.css">
+  <title>deep learning from scratch, in scratch</title>
+</head>
+<body class="flex min-h-screen flex-col items-center w-screen">
+  <div class="py-5 flex-grow flex flex-col items-center" >
+    <h1 class="text-5xl font-bold text-gray-600 mb-2 w-[60%]">deep learning from scratch, in scratch</h1>
+    <div class="content p-3 w-[60%] ">
+      <ul id="toc" class="section-nav">
+<li class="toc-entry toc-h1"><a href="#before-coding">before coding</a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#the-data">the data</a></li>
+<li class="toc-entry toc-h2"><a href="#the-model">the model</a></li>
+<li class="toc-entry toc-h2"><a href="#scratch-the-programming-langauge">scratch, the programming langauge</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#coding">coding</a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#init">init</a></li>
+<li class="toc-entry toc-h2"><a href="#matrix-multiplication">matrix multiplication</a></li>
+<li class="toc-entry toc-h2"><a href="#logsumexp">logsumexp</a></li>
+<li class="toc-entry toc-h2"><a href="#the-backward-pass">the backward pass</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#then-it-all-went-horribly-wrong">then it all went horribly wrong</a></li>
+<li class="toc-entry toc-h1"><a href="#loading-in-the-data">loading in the data</a></li>
+<li class="toc-entry toc-h1"><a href="#looking-back">looking back</a></li>
+</ul>
+      <p>I recently spent the better part of last week doing exactly what the title says.</p>
+
+<p>I implemented a 1 layer Feed Foward Network and trained it on (some of) MNIST. All in <a href="https://scratch.mit.edu/projects/1043415512">scratch</a>.</p>
+
+<p>It would help a lot to understand the basics of Deep Learning when reading this, but I’ll try to make it accessible to anyone with a high level understanding of the field.</p>
+
+<h1 id="before-coding">before coding</h1>
+<h2 id="the-data">the data</h2>
+
+<p>MNIST is an image classification dataset consisting of labeled 28 by 28 grayscale images of digits from 0-9. The goal of the model is to correctly identify the label of each image.</p>
+
+<p class="text-center">
+  <img src="/assets/images/mnist-example.png" style="" />
+  <em>example of an MNIST image</em>
+</p>
+
+<p>For each image, the model should output a series of probablities, representing how likely the model believes that the image belongs to a given class.</p>
+
+<p>For the above image the model might output a vector like</p>
+
+<p>\[  \begin{bmatrix} 0.01 \\ 0.02 \\ 0.01 \\ 0.01 \\ 0.01 \\ 0.08 \\ 0.01 \\ 0.83 \\ 0.01 \\ 0.01 \end{bmatrix} \]</p>
+
+<p>The sum of these entries is one, meaning that it’s a valid probablity distribtuion, and the most likely value is the 8th entry – which corresponds to the number 7.</p>
+
+<p>Our model works purely with vectors and matricies, so we can flatten this 28 by 28 grid into a vector of dimension 784. To make things a little simpler, we can <em>batch</em> inputs to get a matrix of dimension \(  784 \times N \). Where \( N \) is the number of images in the matrix. Our output will then have the shape \( 10 \times N \).</p>
+
+<h2 id="the-model">the model</h2>
+
+<p>I started by writing out the model formally. Given some inputs \(  X \) (\(  X \in \mathbb{R}^{784 \times N}  \)) our model \(  f(X) \) is</p>
+
+<p>\[  H_{1} = W_{1}X + \boldsymbol{b}_1 \]</p>
+
+<p>\[  H_{2} = \textrm{ReLU}(H_1) \]</p>
+
+<p>\[  H_{3} = W_{2}H_{2} + \boldsymbol{b}_2 \]</p>
+
+<p>\[ f(X) = \textrm{Softmax}(H_3) \]</p>
+
+<p>Note that \(  W_1 \in \mathbb{R}^{128 \times 784}, \boldsymbol{b}_1 \in \mathbb{R}^{128}  \) this means that in the first equation, I add a vector to a matrix. In these cases I broadcast the vector across across the batch dimension of the matrix. The same is true for the second equation.</p>
+
+<p>The columns of \( H_3 \) aren’t guaranteed to sum to one. So the <strong>Softmax</strong> function normalizes them and ensures that each column is a valid probablity distribution.</p>
+
+<p>Together, all these equations make up what’s called the <strong>forward pass</strong>, and is one half of the computation we’ll need to do.</p>
+
+<h2 id="scratch-the-programming-langauge">scratch, the programming langauge</h2>
+
+<p>Scratch is pretty limited.</p>
+
+<p>The main thing we’ll need are multi-dimensional lists of numbers. While scratch does have lists, they’re restricted to one dimension, and can only hold up to 200k elements at a time. This is bad news, as neural networks need a lot of data, and the training set for MNIST contains 60k images of size 784! I’ll talk about how I got around this later.</p>
+
+<p>However, scratch contains most of the math operations we’ll need to actually pull this off. In addition to the 4 basic operators, scratch also contains the natural log and the exponential! (What 10 year old needs the natural log?)</p>
+
+<p>Scratch doesn’t have functions, or any sense of scope, so all variables are global. Instead of functions, scratch has 2 options, <strong>custom blocks</strong> and <strong>messages</strong>. List names can <em>not</em> be passed as variables to custom blocks, so I use messages to implement everything.</p>
+
+<p>Messages are signals to various parts of the program. They singal for a block of code to start, but don’t pass along any additional information. I rely on globally avalible buffers and careful reuse of variables to make the most of the messaging system.</p>
+
+<h1 id="coding">coding</h1>
+<h2 id="init">init</h2>
+
+<p>While we can initalize the bias vectors at 0, the weights need to be initalized carefully to avoid vanishing/exploding gradients. The most common initalization is the <strong>xaivier initalization</strong>. In the xaiver init, the values of the weights are sampled from a normal distribution with variance</p>
+
+<p>\[  \frac{2}{D_{in} + D_{out}} \]</p>
+
+<p>The only random variable scratch gives us access to is a uniformly distributed one. However, we can create a standard normal with two unifrom variables using the <strong>box-muller transform</strong>.</p>
+
+<p>\[ \mathcal{N}(0, 1) = \sqrt{-2 \ln U_1} \cos(U_2) \]</p>
+
+<p>Where \(  U_1 \in [0, 1] \) and \(  U_2 \in [0, 2\pi] \). Finally, we scale by the square root of our target variance.</p>
+
+<p>To store these weights, I create a new scratch list for each one (<em>w_one, w_two</em>) along with the bias vectors (<em>b_one, b_two</em>). I store the input dimensions and the output dimensions in the global variables w_[n]_in_features and w_[n]_out_features.</p>
+
+<p class="text-center">
+  <img src="/assets/images/weight-init-blocks.png" />
+  <em>the code used to initalize one weight matrix.</em>
+</p>
+
+<p>Notice, that the second random variable, \( U_2 \) is over \(  [0, 360] \) instead of \(  [0, 2\pi] \). Because of course, scratch operates in degrees.</p>
+
+<h2 id="matrix-multiplication">matrix multiplication</h2>
+
+<p>To implement matrix multiplication, I needed three things. 1. A way to treat 1D lists as 2D, 2. Some way to initate the operation, and 3. A place to store the result of the operation.</p>
+
+<p>Storing matricies as 1D lists under the hood actually isn’t anything new, and is how pytorch implements it’s tensors. We can define a simple mapping from two coordinates to 1.</p>
+
+<p>\[  n_{rows} * r + c  \]</p>
+
+<p>Where \( r \) and \( c \) are the current row and column of the matrix respectivly, assuming that the matrix is 0-indexed.</p>
+
+<p>Well, this assumption is wrong actually! Scratch lists are <em>1 indexed</em>, which was an intense source of frustration at the start, but was remedied by pretending everything was 0-indexed and then adding 1 at the end.</p>
+
+<p>With regards to initating the operation, I’ll use the messages I described before. List names cannot be passed as variables, so each matrix multiplication gets it’s own message of the form [first]_[second]_matmul.</p>
+
+<p class="text-center">
+  <img src="/assets/images/mat-mul-scratch.png" />
+  <em>the code for one matrix multiplication</em>
+</p>
+
+<p>The drawback of not having reusable functions is that it’s 10x easier for me to make a mistake. So after each matmul implementation, I <em>immidately</em> compare it to a multiplication I perform by hand.</p>
+
+<p>If you look at the code above, you’ll notice I store the result in a list called the <em>hidden buffer</em>. This list’s only purpose is to store the resulting multiplication. Every multiplication has an output buffer, and you’ll see why I don’t just get rid of them right after I’m done using them later.</p>
+
+<p>The bias is implemented similarly, the only diffrence is I add the single column bias to <em>every column</em> in the hidden matrix.</p>
+
+<p>ReLU stands for <em>Rectified Linear Unit</em> and is what gives the model it’s expressive capablities. It works elementwise implementing the following function on some matrix \(  M \)</p>
+
+<p>\[ \textrm{ReLU}(M)_{i, j} = \max(0, M_{i, j}) \]</p>
+
+<h2 id="logsumexp">logsumexp</h2>
+<p>The final layer is the softmax of every column in the matrix \(  H_3 \). Defined as</p>
+
+<p>\[  \textrm{Softmax}(H_3)_{i, j} = \frac{e^{H^3_{i, j}}}{\sum_k e^{H^3_{k, j}}} \]</p>
+
+<p>Like I said earlier, it’s the probablity that the \( j \)th image is the number \( i - 1 \).</p>
+
+<p>The loss – a number which tells us how good the models predictions are – is defined as follows</p>
+
+<p>\[ -\frac{1}{N} \sum^N_{i=1} \ln \textrm{Softmax}(H_3)_{y_i, i} \]</p>
+
+<p>Where \( \boldsymbol{y} \) is a vector in \( \mathbb{R}^N \) that tells us which classes are correct for a given set of images. This defines the <strong>Cross Entropy Loss</strong>, and our goal is to minimize it.</p>
+
+<p>Now the denomanator of the softmax calculation is tricky to calculate. For numerical stablity reasons, we don’t calculate it directly. Instead, we perform a little trick described <a href="https://leimao.github.io/blog/LogSumExp/">here</a>. Below is the code I wrote (dragged?) to implement this.</p>
+
+<p><img src="/assets/images/logsumexp-blocks.png" alt="" /></p>
+
+<p>It’s beautiful.</p>
+
+<h2 id="the-backward-pass">the backward pass</h2>
+<p>Fortunatly, the backward pass uses much of the same operations that the foward pass does. The only exception being the <em>Heavyside function</em>, which I’ll describe later.</p>
+
+<p>At a high level, Gradient Descent works by finding the direction that loss decreases the most and making a small step in that direction. To find this direction, we find the gradient with repsect to the loss of all four of the trainable parameters.</p>
+
+<p>The main way to do this is via the <em>chain rule</em>. We can’t directly calculate the derivative of the loss wrt to any one parameter, but we can do so indirectly.</p>
+
+<p>For example, to calculate \(  \frac{dL}{d W_2} \) we calculate</p>
+
+<p>\[  \frac{dL}{dW_2} = \frac{dL}{dH_3} \frac{dH_3}{dW_2} \]</p>
+
+<p>Computing gradients like this is called <strong>the backward</strong> pass, and is the other half of the computation I mentioned earlier.</p>
+
+<p>This is true for scalar functions with scalar outputs, but each of these things are matricies and that complicates things. You can’t just multiply two matrices together.</p>
+
+<p>For this, I asked ChatGPT.</p>
+
+<p>I felt fine asking ChatGPT about the details for three reasons</p>
+
+<ol>
+  <li>
+    <p>Nothing I’m doing isn’t standard, and has probably been done before. In fact, ChatGPT was able to pick up on the fact that I was creating a NN given only the equations.</p>
+  </li>
+  <li>
+    <p>If I were to ever do this again in a real programming language, I wouldn’t touch matrix based backprop with a 10ft pole. Andrej Kaparthy has a good tutorial on implementing <strong>scalar valued</strong> backprop that doesn’t give me an aynurism.</p>
+  </li>
+  <li>
+    <p>It made the progamming (dragging?) 10 times faster. This project easily could’ve taken a month if I had to teach my self the details to matrix calculus to make this.</p>
+  </li>
+</ol>
+
+<p>That being said, you’ll see why this might have been an issue later.</p>
+
+<p>Anyways, here’s the graidents for each parameter matrix according to ChatGPT</p>
+
+<p>\[ \frac{dL}{d\boldsymbol{b}_1} = (W_2^T(f(X) - Y) \odot \textrm{Heaviside}(H_1)) \]
+\[ \frac{dL}{dW_1} = (W_2^T(f(X) - Y) \odot \textrm{Heaviside}(H_1))X^T \]
+\[ \frac{dL}{d\boldsymbol{b}_2} = f(X) - Y \]
+\[ \frac{dL}{dW_2} = (f(X) - Y)H_2^T \]</p>
+
+<p>You’ll notice a lot of reused computation here, it’s something I took advantage of to make implementing this less of a nightmare. Note that Y is the labels matrix. \( Y \in \mathbb{R}^{10 \times N} \), it has \( N \) columns each containing a <a href="https://en.wikipedia.org/wiki/One-hot">one hot encoded</a> label of each image.</p>
+
+<p>The <em>Heaviside function</em> is the derivative of the ReLU function, and is defined as follows</p>
+
+<p>\[ \textrm{Heaviside}(X)_{i, j} = \begin{cases} 1 &amp; X_{i, j} \geq 0 \\ 0 &amp; X_{i, j} &lt; 0  \end{cases} \]</p>
+
+<p>Now all that’s left to do is implement the fucntions, load in the data, and profit right?</p>
+
+<h1 id="then-it-all-went-horribly-wrong">then it all went horribly wrong</h1>
+
+<p>You see, I’ve been spoiled by pytorch. I’ve never really had to think about how the arrays were stored under pytorch’s hood. Yes I knew they were flat arrays for fast indexing, but <em>in what order</em>. Even though I had checked each matmul by had, I hadn’t bothered to check the <em>order</em> of each array. When I say order, I mean the order the values exist in memory.</p>
+
+<p>There are two major orders, <em>column major</em> and <em>row major</em>. I was assuming everything was column major, but outputting the results of my matrix multiplications in row major order! Neural Networks fail silently, and it wasn’t until my loss inital loss started trending <em>up</em> that I realized I would have to rewrite <em>everything I had done so far</em>. By now, I’d call myself a seinor scratch developer, so reimplementing everything only took a day.</p>
+
+<p class="text-center">
+  <img src="https://craftofcoding.wordpress.com/wp-content/uploads/2017/02/rowcolumnarrays.jpg" style="" />
+  <em>image from <a href="https://craftofcoding.wordpress.com/2017/02/03/column-major-vs-row-major-arrays-does-it-matter/">the craft of coding</a></em>
+</p>
+
+<p>To test everything, I created some dummy datapoints and had the model overfit to them. The results were beautiful. Loss, quickly and rapidly decreasing.</p>
+
+<p class="text-center">
+  <img src="/assets/images/dummydata-scratch-train.png" style="" />
+  <em>loss curve on 2 random datapoints</em>
+</p>
+
+<p>MNIST, was less beautiful.</p>
+
+<h1 id="loading-in-the-data">loading in the data</h1>
+
+<p>MNIST, despite being small by modern standards, is massive by scratch standards. It isn’t possible to load the entire dataset into the input buffer, nor did I have the energy left to write a batch loader for a toy project. So I loaded in 250 datapoints and tried to make due with that.</p>
+
+<p>The model is small, and our dataset is smaller. Neural Networks are not known for being sample efficent, and I am using no forms of regularization. I’m using full batch gradient descent and train on 200 steps for each graph here.</p>
+
+<p>The graphs below are a result of using progressively larger subsets of the 250 samples. I didn’t have matplotlib, so please excuse the janky plotting setup. Loss starts at ~2.3 for each graph. Notice that I decreased the learning rate by an order of magintude compared to the plot above, this is because I was suffering from the <em>Dying ReLU</em> problem. The heaviside function stops gradient flow through zeroed out neruons, in some cases, this completely causes those neruons to never fire again. While I could implement a new activation function, decreasing the learning rate seemed to work.</p>
+
+<p class="text-center">
+  <img src="/assets/images/one-sample-scratch.png" style="" />
+  <em>loss curve on one MNIST sample</em>
+</p>
+
+<p class="text-center">
+  <img src="/assets/images/four-sample-scratch.png" style="" />
+  <em>loss curve on four MNIST samples</em>
+</p>
+
+<p class="text-center">
+  <img src="/assets/images/sixteen-sample-scratch.png" style="" />
+  <em>loss curve on sixteen MNIST samples</em>
+</p>
+
+<p class="text-center">
+  <img src="/assets/images/sixty-four-sample-scratch.png" style="" />
+  <em>loss curve on sixty-four MNIST samples</em>
+</p>
+
+<p>Training on 64 samples took 5+ hours on my machine, all for this depressing ass loss graph, so I didn’t bother training on the full subset.</p>
+
+<p>So can you build a nerual network in scratch? Yes! Will it work? Well…</p>
+
+<h1 id="looking-back">looking back</h1>
+
+<p>Why did it <em>really</em> fail to converge. Was it because of shoddy GPT math? Possibly. However, the model has everything pretty much stacked against it.</p>
+<ul>
+  <li>Training is <em>unbearably</em> slow (in the time I might do 5 training steps on 250 samples, I could’ve finished 5 epochs on the full 60k images in the equivilant pytorch implementation) as a result even the 4 sample graph took around 15 mintues of training.</li>
+  <li>Data is incredilbly limited, even sample efficent models trained on MNIST need a few thousand examples.</li>
+  <li>The model is pretty small, and super shallow. While yes, I could’ve added more hidden layers. I also have spent a week+ on this.</li>
+  <li>The loss curve was <em>smooth</em>! I suspect this is because I’m not using SGD, but I wasn’t expecting it to be this smooth, what’s up with that?</li>
+</ul>
+
+<p>But this whole ordeal taught me a valuable lesson in paitence, and made me appricate pytorch <em>so</em> much more. Feel free to look at the code and try to find any bugs! I’ve removed the MNIST data because scratch wouldn’t let me publish a project so large, but here’s the code I used to generate the image and label files.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">from</span> <span class="n">torchvision</span> <span class="kn">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">transforms</span>
+
+<span class="c1"># Load the MNIST dataset
+</span><span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="nc">Compose</span><span class="p">([</span><span class="n">transforms</span><span class="p">.</span><span class="nc">ToTensor</span><span class="p">()])</span>
+<span class="n">mnist_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">.</span><span class="nc">MNIST</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="sh">'</span><span class="s">./data</span><span class="sh">'</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+
+<span class="c1"># Prepare the data for the first 250 samples
+</span><span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">250</span><span class="p">):</span>
+    <span class="n">image</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="n">mnist_dataset</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="c1"># Flatten the image and add it to the images list
+</span>    <span class="n">flattened_image</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="nf">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">).</span><span class="nf">numpy</span><span class="p">()</span>
+    <span class="n">images</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">flattened_image</span><span class="p">)</span>
+    
+    <span class="c1"># Create a one-hot encoded label
+</span>    <span class="n">one_hot_label</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">one_hot_label</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">labels</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">one_hot_label</span><span class="p">)</span>
+
+<span class="c1"># Convert lists to numpy arrays
+</span><span class="n">images</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">images</span><span class="p">).</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Column-major order
+</span><span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">labels</span><span class="p">).</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Column-major order
+</span>
+<span class="c1"># Convert numpy arrays to pandas DataFrames
+</span><span class="n">images_df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nc">DataFrame</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+<span class="n">labels_df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nc">DataFrame</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+
+<span class="c1"># Save DataFrames to CSV files
+</span><span class="n">images_df</span><span class="p">.</span><span class="nf">to_csv</span><span class="p">(</span><span class="sh">'</span><span class="s">images.csv</span><span class="sh">'</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">labels_df</span><span class="p">.</span><span class="nf">to_csv</span><span class="p">(</span><span class="sh">'</span><span class="s">labels.csv</span><span class="sh">'</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>onward to the next project.</p>
+
+      <div class="flex justify-around my-5"><a href="/2024/07/03/implementing-ewc.html"> &laquo; prev</a> <a href="/">home</a> <a href="/2024/08/16/EUF-technical-report.html"> next &raquo; </a></div>
+    </div>  
+  </div>
+  <footer class="py-2">
+    <p class="text-center"> <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a href="https://x.com/biggieboijosh" class="text-blue-500 hover:text-blue-700">x</a> 
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+</body>
+</html>
