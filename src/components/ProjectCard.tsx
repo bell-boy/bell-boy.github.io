@@ -6,24 +6,22 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-interface ProjectDescription {
-  descriptionText: string;
-  title: string;
-  date: Date;
+import { ProjectDescription } from "@/data/projects"
 
-}
 
 export default function ProjectCard(props: ProjectDescription) {
-  const {descriptionText, title, date} = props
+  const {name, date, description, link} = props
   return(
-    <Card className="min-w-full">
-      <CardHeader className="">
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{date.toDateString()}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p>{descriptionText}</p>
-      </CardContent>
-    </Card>    
+    <a href={link} target="_blank" className="col-span-1">
+      <Card className="min-w-full break-words">
+        <CardHeader className="">
+          <CardTitle>{name}</CardTitle>
+          <CardDescription>{(new Date(date)).toDateString()}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>{description}</p>
+        </CardContent>
+      </Card>    
+    </a>
   )
 }

@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bash compile-blogs.sh && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:blogs": "bash compile-blogs.sh"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.0",
@@ -22,10 +23,12 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "chokidar": "^4.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.8",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
     "typescript": "^5"
   }
 }
