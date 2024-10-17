@@ -6,7 +6,7 @@ toc: true
 ---
 
 
-A while ago I replicated the algorithm described by the paper [Overcoming catastrophic forgetting in neural networks](https://arxiv.org/abs/1612.00796). I wrote about the process of building understanding around the paper [here]({{ site.baseurl }}{% link _posts/2024-03-08-three-old-dead-stataticians.md %}). I implemented everything in PyTorch in a [colab notebook](https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing). 
+A while ago I replicated the algorithm described by the paper [Overcoming catastrophic forgetting in neural networks](https://arxiv.org/abs/1612.00796). I implemented everything in PyTorch in a [colab notebook](https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing). 
 
 The goal of Elastic Weight Consolidation (the main method described in the paper) is to counteract catastrophic fogetting, a phenomena where nerual networks trained on multiple seperate tasks sequentially rapidly forget how to perform old tasks.
 

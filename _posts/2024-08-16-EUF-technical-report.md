@@ -205,6 +205,8 @@ Future directions include
 
 Thank you for reading.
 
+# Footnotes
+
 [^1]: Bandarabadi, Mojtaba, Jalil Rasekhi, César A. Teixeira, Mohammad R. Karami, and António Dourado. “On the Proper Selection of Preictal Period for Seizure Prediction.” Epilepsy & Behavior 46 (May 1, 2015): 158–66. https://doi.org/10.1016/j.yebeh.2015.03.010.
 
 [^2]: Ali Shoeb. Application of Machine Learning to Epileptic Seizure Onset Detection and Treatment. PhD Thesis, Massachusetts Institute of Technology, September 2009.

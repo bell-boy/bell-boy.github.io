@@ -20,7 +20,3 @@ kramdown:
 
 plugins:
   - jekyll-toc
-  - jekyll-postcss
-
-postcss:
-  cache: false

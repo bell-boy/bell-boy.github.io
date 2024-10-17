@@ -1,84 +1,13 @@
----
----
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-html {
-  scroll-behavior: smooth;
-}
-div.highlight {
-  overflow: auto;
+body {
+  font-family: "Merriweather", serif;
 }
 
-@layer components {
-  .footnotes {
-    @apply text-xs;
-  }
+a {
+  border-bottom: 1px dotted rgba(34, 34, 34, .69);
+  color: #ffc300;
+  text-decoration: none;
+}
 
-  .content p:not(ol p) {
-    @apply my-3;
-  }
-
-  .footnotes ol {
-    @apply list-decimal;
-  }
-
-  .content h1 {
-    @apply text-3xl font-bold text-gray-600 mb-2 self-start
-  }
-
-  .content h2 {
-    @apply text-2xl font-bold text-gray-600 mb-2 self-start
-  }
-
-  .content h3 {
-    @apply text-xl font-bold text-gray-600 mb-2 self-start
-  }
-
-  tr {
-    @apply border-b border-gray-300
-  }
-
-  td {
-    @apply p-2 min-w-0
-  }
-
-  table {
-    @apply table-auto border-collapse min-w-0 
-  }
-
-  .content hr {
-    @apply my-2
-  }
-
-  .content img {
-    @apply mx-auto
-  }
-
-  a {
-    @apply text-blue-500 hover:text-blue-700;
-  }
-
-  .content blockquote {
-    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600;
-  }
-
-  #toc {
-    @apply border border-gray-300 rounded mb-4 py-2 list-inside pl-2 list-none;
-  }
-  
-  .content ul {
-    @apply list-inside list-disc pl-2
-  }
-  
-  #toc ul {
-    @apply list-none list-inside pl-2
-  }
-
-  .content ol {
-    @apply list-outside list-decimal pl-2 
-  }
-
+h1, h2, h3, h4, h5, h6 {
+  color:  #ffc300 ;
 }
