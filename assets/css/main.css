@@ -1,0 +1,13 @@
+body {
+  font-family: "Merriweather", serif;
+}
+
+a {
+  border-bottom: 1px dotted rgba(34, 34, 34, .69);
+  color: #ffc300;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color:  #ffc300 ;
+}

@@ -1,8 +1,6 @@
 ---
 title: Epileptic Uncertainty Framework Technical Report
 layout: post
-header-includes:
-  - <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 ---
 
 I recently spent a couple months working on a research project. The goal was to submit to NeurIPS' new High School track. I'd never done something like this, and I learned a lot about doing ML research by trying.
@@ -22,7 +20,7 @@ The main way seizures are predicted is under what I'll call the *Standard Framew
 When we make a prediction, we're saying that within SOP minutes, but not before SPH minutes, a seizure will occur. These two numbers are hyper parameters, and are fixed before training. This makes seizure prediction under the SF a classification problem. 
 
 <p class="text-center">
-  <img src="/assets/images/Standard-Framework.png" style="" />
+  <img src="{{ site.baseurl }}/assets/images/Standard-Framework.png" style="" />
   <em>Example from Troung et al.</em>
 </p>
 
@@ -52,44 +50,44 @@ I only train on a single patient due to not wanting to work on this project for 
 
 ## Epileptic Uncertainty Framework
 
-Under EUF, the model is represented as a function \\( f \\) which maps *data* to *distribution parameters*. What \\( f \\) is approximating is the conditional distribution \\( p(t | \\mathbf{X}) \\). In english, "the probablity density of a seizure happening in exactly \\( t \\) seconds from now given the EEG data"
+Under EUF, the model is represented as a function \\( f \\) which maps *data* to *distribution parameters*. What \\( f \\) is approximating is the conditional distribution \\( p(t \| \mathbf{X}) \\). In english, "the probablity density of a seizure happening in exactly \\( t \\) seconds from now given the EEG data"
 
 We assume that the conditional distribution is from a family of distributions \\( \mathcal{F} \\). Each distribution in this family is uniquely defined by a parameter vector \\( \mathbf{\theta} \\). So our model will take in the EEG data \\( \mathbf{X} \\) and return the parameter vector \\( \mathbf{\theta} \\) specifying the distribution which we'll use to approximate the conditional distribution. 
 
-For this task, we assume that epliepsy is a *possion process* and model the distribution over the next seizure time as an *exponential distribution*. The parameter vector is just a single value \\(\\lambda\\) and the distribution is 
+For this task, we assume that epliepsy is a *possion process* and model the distribution over the next seizure time as an *exponential distribution*. The parameter vector is just a single value \\(\lambda\\) and the distribution is 
 
-\\[ p'(t) = \\lambda \\exp(-\\lambda t) \\]
+\\[ p'(t) = \lambda \exp(-\lambda t) \\]
 
 However, to make training easier, we use the MPH to bound how far the model has to predict. So the model actually outputs the vector
 
 \\[
-\\begin{bmatrix}
-  \\omega & \\mathbf{\\theta}
-\\end{bmatrix} 
+\begin{bmatrix}
+  \omega & \mathbf{\theta}
+\end{bmatrix} 
 \\]
 
 \\(\mathbf{\theta}\\) is still the same parameter vector as before, but $\omega$ is the probablity that a seizure happpens in the MPH at all. Phrased mathematically 
 
-\\[ p( \\Omega ) = \\omega \\]
+\\[ p(\Omega) = \omega \\]
 
-Where \\( \\Omega \\) is the event where a seizure occurs within the MPH.
+Where \\(\Omega\\) is the event where a seizure occurs within the MPH.
 
 Now, instead of approximating the conditional, we now approximate 
 
-\\[ p(t \\| \\mathbf{X}, \\Omega) \\]
+\\[ p(t \| \mathbf{X}, \Omega) \\]
 
 In english, "the probability density that a seizure happens in \\( t \\) seconds given the data and that a seizure occurs within the MPH."
 
 So the probablity density at \\( t \\) is 
 
-\\[ p(t \\| \mathbf{X}, \\Omega)p(\\Omega) \\]
+\\[ p(t \| \mathbf{X}, \Omega)p(\Omega) \\]
 
 ## Model
 
 I use a model very similar in archecture to AlexNet. I adjusted in the nubmer channels that had to pass through the model, and some filter sizing. I also make the model *Multi-Head*. Meaning for each parameter in the output vector, a seperate set of MLP layers is set to extract different information from the shared layers without interfering with each other.
 
 <p class="text-center">
-  <img src="/assets/images/multihead.png" style="" />
+  <img src="{{ site.baseurl }}/assets/images/multihead.png" style="" />
   <em>Example of Multiple head model from Li and Hoiem.</em>
 </p>
 
@@ -97,30 +95,29 @@ I find that single head training doesn't work very well. The model has to strugg
 
 ## Training
 
-To train the model, I use the Maximum Likelihood Objective. We're given a dataset \\( \\mathcal{D} = \{( \\mathbf{X}_i, t_i) \}_N \\) consisting of \\( N \\) sameples which we assume are independent of each other, but identically distributed. 
+To train the model, I use the Maximum Likelihood Objective. We're given a dataset \\( \mathcal{D} = \{(\mathbf{X}_i, t_i)\}_N \\) consisting of \\( N \\) sameples which we assume are independent of each other, but identically distributed. 
 
 The likelihood is equal to 
 
-\\[ \\prod_{i=1}^N p'(t \\| \\mathbf{X}, \\Omega)p'(\\Omega) \\]
+\\[ \prod_{i=1}^N p'(t \| \mathbf{X}, \Omega)p'(\Omega) \\]
 
-To make maximizing easier, we move to log space, and, as is tradition, make everything negaitve and switch to minimizing. For the exponential distribution, this means that the optimization criterion \\(\\mathcal{L}\\) is 
+To make maximizing easier, we move to log space, and, as is tradition, make everything negaitve and switch to minimizing. For the exponential distribution, this means that the optimization criterion \\(\mathcal{L}\\) is 
 
-\\[ \\mathcal{L}(\\mathcal{D}) = \\sum_{i=1}^N \\lambda t_i - \\ln \\lambda - \\ln \\omega \\]
+\\[ \mathcal{L}(\mathcal{D}) = \sum_{i=1}^N \lambda t_i - \ln \lambda - \ln \omega \\]
 
 Out of curiosity, I tried a different distribution. The Normal distribution. There isn't really a good argument to use this distribution though, I just found interesting results when training. The Normal criterion is 
 
-
-\\[ \\mathcal{L}\_{Normal}(\\mathcal{D}) = \\sum\_{i=1}^N \\frac{(\\mu - t_i)^2}{\\sigma ^2} + \\frac{\\ln 2 \\pi \\sigma ^2}{2} - \\ln \\omega \\]
+\\[ \mathcal{L}\_{Normal}(\mathcal{D}) = \sum_{i=1}^N \frac{(\mu - t_i)^2}{\sigma^2} + \frac{\ln 2 \pi \sigma^2}{2} - \ln \omega \\]
 
 A major problem when using multiple heads is *Catastrophic Forgetting*. The performance of one head goes down as the other head goes up. Training changes the shared layers without regard for the other head. To minimize this, I use the regularization provided in the paper *Learning Without Forgetting* by Li and Hoiem.[^3]
 
 It's an additional term added to the loss that prevents the predicted distribution of the classification head from moving to far from it's original state, while still being flexible enough to learn the new task. The loss is simply 
 
-\\[ D_\\textrm{KL}(\\omega_{new} || \\omega_{old}) \\]
+\\[ D_\textrm{KL}(\omega_{new} \|\| \omega_{old}) \\]
 
 In english, "The KL divergence between the distributions predicted by the new and previous model"
 
-Note that is distribution is the *classification distribution* denoted by \\( \\omega \\). It's a Boltzmann distribution over 2 states: a seizure will happen within the MPH, or not.
+Note that is distribution is the *classification distribution* denoted by \\( \omega \\). It's a Boltzmann distribution over 2 states: a seizure will happen within the MPH, or not.
 
 This loss works very well to prevent Catastrophic Forgetting, without any hyperparameter tuning!
 
@@ -130,7 +127,7 @@ When training the regression distribution I only train on positive samples. To p
 
 When the family of distributions is Gaussian with differing variance, the regression is called *heteroskedastic*. Training heteroskdastic models can be hard, because of the first term in the loss function. Stirn et al. Identify this in their paper *Faithful Heteroskedastic Regression in Nueral Networks*[^4] and propose two measures to resolve it. 
 
-First, prevent graident flow from the varience head (the \\( \\sigma^2 \\) term) to the shared layers. Next, to remove the influence of the varience head, scale the gradient of the regression head by \\( \\sigma^2 \\) during the backward pass. These two methods are necessary to get acceptable performance on the regression head.  
+First, prevent graident flow from the varience head (the \\( \sigma^2 \\) term) to the shared layers. Next, to remove the influence of the varience head, scale the gradient of the regression head by \\( \sigma^2 \\) during the backward pass. These two methods are necessary to get acceptable performance on the regression head.  
 
 Specific training details can be found in the attached colab notebook.
 
@@ -142,7 +139,7 @@ Next, to evaulate regression performance, I use another three metrics. RMSE, Bri
 
 For those unfamilar, the Briar Score is a common forcasting metric ranging from 0 to 1. The equation for it is as follows
 
-\\[ \\textrm{BS} = \\frac{1}{N} \\sum_{i=1}^N (l_i - p'_i)^2 \\]
+\\[ \textrm{BS} = \frac{1}{N} \sum_{i=1}^N (l_i - p'_i)^2 \\]
 
 Where \\( l_i \\) is 1 if a seizure occurs within a given time interval, and \\( p_i' \\) is the probablity predicted of a seizure happening in that interval. A Briar score of 0 indicates perfect calibration, while a Briar Score of 1 indicates the worst possible performance. 
 
@@ -161,19 +158,23 @@ Additionally, I also plot calibration curves. These are a more qualitative way t
 
 The arrows indicate whether a lower or higher score is better.
 
-<div class="flex w-full overflow-hidden flex-row justify-center" style="display: flex; flex-direction: row;">
-<img src="../assets/images/exp-1.png" class="min-w-0" style="min-width: 0" />
-<img src="../assets/images/exp-2.png" class="min-w-0" />
-<img src="../assets/images/exp-3.png" class="min-w-0" />
+<div class="text-center" >
+  <div class="flex w-full overflow-hidden flex-row justify-center">
+    <img src="/assets/images/exp-1.png" class="min-w-0" />
+    <img src="/assets/images/exp-2.png" class="min-w-0" />
+    <img src="/assets/images/exp-3.png" class="min-w-0" />
+  </div>
+  <em>Calibration curves for the Exponential model</em>
 </div>
-<em>Calibration curves for the Exponential model</em>
 
-<div class="flex w-full overflow-hidden flex-row justify-center">
-  <img src="../assets/images/gauss-1.png" class="min-w-0" />
-  <img src="../assets/images/gauss-2.png" class="min-w-0" />
-  <img src="../assets/images/gauss-3.png" class="min-w-0" />
+<div class="text-center" >
+  <div class="flex w-full overflow-hidden flex-row justify-center">
+    <img src="/assets/images/gauss-1.png" class="min-w-0" />
+    <img src="/assets/images/gauss-2.png" class="min-w-0" />
+    <img src="/assets/images/gauss-3.png" class="min-w-0" />
+  </div>
+  <em>Calibration curves for the Gaussian model</em>
 </div>
-<em>Calibration curves for the Gaussian model</em>
 
 These classification results are very similar to the work of Troung et al.[^5] and Rasheed et al.[^6], who also use a similar model archetecture, and acheive results out of our error bars only for FPR/H.
 
@@ -204,6 +205,8 @@ Future directions include
 
 Thank you for reading.
 
+# Footnotes
+
 [^1]: Bandarabadi, Mojtaba, Jalil Rasekhi, César A. Teixeira, Mohammad R. Karami, and António Dourado. “On the Proper Selection of Preictal Period for Seizure Prediction.” Epilepsy & Behavior 46 (May 1, 2015): 158–66. https://doi.org/10.1016/j.yebeh.2015.03.010.
 
 [^2]: Ali Shoeb. Application of Machine Learning to Epileptic Seizure Onset Detection and Treatment. PhD Thesis, Massachusetts Institute of Technology, September 2009.
@@ -215,3 +218,6 @@ Thank you for reading.
 [^5]: Truong, Nhan Duy, Anh Duy Nguyen, Levin Kuhlmann, Mohammad Reza Bonyadi, Jiawei Yang, Samuel Ippolito, and Omid Kavehei. “Convolutional Neural Networks for Seizure Prediction Using Intracranial and Scalp Electroencephalogram.” Neural Networks 105 (September 1, 2018): 104–11. https://doi.org/10.1016/j.neunet.2018.04.018.
 
 [^6]: Rasheed, Khansa, Junaid Qadir, Terence J. O’Brien, Levin Kuhlmann, and Adeel Razi. “A Generative Model to Synthesize EEG Data for Epileptic Seizure Prediction.” arXiv, December 1, 2020. http://arxiv.org/abs/2012.00430.
+
+
+
