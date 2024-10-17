@@ -1,10 +1,10 @@
 .main {
-  max-width: 40em;
+  max-width: min(40em, 100%);
   margin: 0 auto;
 }
 
 img {
-  max-width: 40em;
+  max-width: min(40em, 100%);
 }
 
 div.highlight {
