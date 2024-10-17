@@ -3,28 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!--<link rel="stylesheet" href="/assets/css/tailwind.css">-->
+  <link rel="stylesheet" href="/assets/css/posts.css">
   <link rel="stylesheet" href="/assets/css/main.css">
   <link rel="stylesheet" href="/assets/css/code-style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
   <title>implementing elastic weight consolidation</title>
 </head>
-<body class="flex min-h-screen flex-col items-center w-screen">
-  <div class="py-5 flex-grow flex flex-col items-center" >
-    <h1 class="text-5xl font-bold text-gray-600 mb-2 w-[60%]">implementing elastic weight consolidation</h1>
-    <div class="content p-3 w-[60%] ">
-      <ul id="toc" class="section-nav">
-<li class="toc-entry toc-h1"><a href="#the-theory-behind-it-all">the theory behind it all</a></li>
-<li class="toc-entry toc-h1"><a href="#implementing-the-thing">implementing the thing</a></li>
-<li class="toc-entry toc-h1"><a href="#caveats">caveats</a>
-<ul>
-<li class="toc-entry toc-h2"><a href="#why-does-ewc-work-so-well">why does ewc work so well?</a></li>
-<li class="toc-entry toc-h2"><a href="#femi-ive-never-even-heard-of-continual-learning">femi, i’ve never even heard of continual learning</a></li>
-</ul>
-</li>
-<li class="toc-entry toc-h1"><a href="#model-pruning">model pruning</a></li>
-<li class="toc-entry toc-h1"><a href="#conclusions--meta-lessons">conclusions &amp; meta-lessons</a></li>
-</ul>
-      <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I wrote about the process of building understanding around the paper <a href="/2024/03/08/three-old-dead-stataticians.html">here</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
+<body>
+  <div class="main">
+    <header>
+      <h1>
+        implementing elastic weight consolidation
+      </h1>
+      <p>
+        <em>
+          published 07.03.2024
+        </em>
+      </p>
+    </header>
+    <a href="https://bell-boy.github.io">> return home</a>
+    <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
 
 <p>The goal of Elastic Weight Consolidation (the main method described in the paper) is to counteract catastrophic fogetting, a phenomena where nerual networks trained on multiple seperate tasks sequentially rapidly forget how to perform old tasks.</p>
 
@@ -193,12 +193,7 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
   </ol>
 </div>
 
-      <div class="flex justify-around my-5"><a href="/2024/04/07/the-interpretability-technique-no-one-is-talking-about.html"> &laquo; prev</a> <a href="/">home</a> <a href="/2024/07/05/deep-learning-from-scratch-in-scratch.html"> next &raquo; </a></div>
-    </div>  
   </div>
-  <footer class="py-2">
-    <p class="text-center"> <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a href="https://x.com/biggieboijosh" class="text-blue-500 hover:text-blue-700">x</a> 
-  </footer>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
 </body>
 </html>

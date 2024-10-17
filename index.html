@@ -3,81 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!--<link rel="stylesheet" href="/assets/css/tailwind.css">-->
   <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
   <title>fbello</title>
 </head>
-<body class="flex min-h-screen flex-col items-center">
-  <div class="flex-grow w-[60%] my-4">
-    <h1 class="text-4xl font-bold text-gray-600 mb-2">femi bello</h1>
-    <h2 class="text-gray-400 text-sm">student @ ut austin </h2>
-    <p>computer science and mathematics major interested in machine learning</p>
-    <p>contact me at <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="link">github</a> | <a class="link">resume</a> | <a class="link" href="https://x.com/biggieboijosh">x</a> </p>
+<body>
+  <div style="display: flex; flex-direction: column;">
+    <h1 style="font-size: 10em;">femi bello</h1>
+    <p>cs & mathematics major interested in ml</p>
+    <p>contact me at femi.bello@utexas.edu </p>
 
-    <hr class="my-2">
-
-    <h2 class="text-2xl mb-2">recent blogs</h2>
-    <p>I try to publish a blog per week. read more in my <a href="/archive" class="link">archive</a></p>
-    <div>
+    <h2>writing/projects</h2>
+    <div style="display: grid; grid-template-columns: auto auto auto auto;">
       
-        <div class="flex justify-between my-1">
-          <a href="/2024/08/16/EUF-technical-report.html" class="text-md link max-w-[60%]">Epileptic Uncertainty Framework Technical Report</a>
-          <p class="text-right">August 16, 2024</p>
+        <div>
+          <a href="/2024/08/16/EUF-technical-report.html">Epileptic Uncertainty Framework Technical Report</a>
         </div>
       
-        <div class="flex justify-between my-1">
-          <a href="/2024/07/05/deep-learning-from-scratch-in-scratch.html" class="text-md link max-w-[60%]">deep learning from scratch, in scratch</a>
-          <p class="text-right">July 05, 2024</p>
+        <div>
+          <a href="/2024/07/05/deep-learning-from-scratch-in-scratch.html">deep learning from scratch, in scratch</a>
         </div>
       
-        <div class="flex justify-between my-1">
-          <a href="/2024/07/03/implementing-ewc.html" class="text-md link max-w-[60%]">implementing elastic weight consolidation</a>
-          <p class="text-right">July 03, 2024</p>
+        <div>
+          <a href="/2024/07/03/implementing-ewc.html">implementing elastic weight consolidation</a>
         </div>
       
-        <div class="flex justify-between my-1">
-          <a href="/2024/04/07/the-interpretability-technique-no-one-is-talking-about.html" class="text-md link max-w-[60%]">the interpretablity technique no one is talking about</a>
-          <p class="text-right">April 07, 2024</p>
-        </div>
-      
-        <div class="flex justify-between my-1">
-          <a href="/2024/03/11/on-learning.html" class="text-md link max-w-[60%]">on learning</a>
-          <p class="text-right">March 11, 2024</p>
-        </div>
-      
-    </div> 
-    <hr class="my-2">
-
-    <h2 class="text-2xl mb-2">projects</h2>
-    <div>
-      <div class="my-3">
-  <div class="flex justify-between">
-    <h3 class="font-semibold">Implementing Elastic Weight Consolidation in Pytorch</h3>
-    <p class="text-right"><a class="text-blue-500 hover:text-blue-700" href="/2024/07/03/implementing-ewc.html">blog post</a> | <a class="text-blue-500 hover:text-blue-700" href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">code</a></p>
-  </div>
-  <p>Replicated Overcoming catastrophic forgetting in neural
-        networks by Kirkpatrick et al. in pytorch. Investigated using the Fisher Information Matrix for network pruning. Detailed write up in blog post</p>
-</div>
-      <div class="my-3">
-  <div class="flex justify-between">
-    <h3 class="font-semibold">Epileptic Uncertainiy Framework</h3>
-    <p class="text-right"><a class="text-blue-500 hover:text-blue-700" href="https://drive.google.com/file/d/1wRe8R8Xyd5VdlRU2eJHBjq76D6fkvUcq/view?usp=sharing">blog post</a> | <a class="text-blue-500 hover:text-blue-700" href="https://github.com/bell-boy/SeizureSense">code</a></p>
-  </div>
-  <p>Applied Heteroskedastic Regression to Seizure Prediction using a CNN. Acheive parity with comparable CNN model trained using the classical prediction framework. Blog post coming soon.</p>
-</div>
-      <div class="my-3">
-  <div class="flex justify-between">
-    <h3 class="font-semibold">Deep Learning From Scratch, In Scratch</h3>
-    <p class="text-right"><a class="text-blue-500 hover:text-blue-700" href="/2024/07/05/deep-learning-from-scratch-in-scratch.html">blog post</a> | <a class="text-blue-500 hover:text-blue-700" href="https://scratch.mit.edu/projects/1043415512/">code</a></p>
-  </div>
-  <p>Created a 1 Layer MLP from scratch in the visual scripting langauge provided by scratch.mit.edu. Implemented backpropagation and a training loop.</p>
-</div>
     </div>
   </div>
-  <footer class="py-2">
-    <p class="text-center"> <code class="text-sm">femi.bello@utexas.edu</code> | <a href="https://github.com/bell-boy" class="text-blue-500 hover:text-blue-700">github</a> | <a class="text-blue-500 hover:text-blue-700">resume</a> | <a href="https://x.com/biggieboijosh" class="text-blue-500 hover:text-blue-700">x</a> 
-  </footer>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
 </body>
-
 </html>
