@@ -1,6 +1,6 @@
 ---
 layout: post
-title: How to Use nnsight, a Tutorial for Language Models
+title: how to use nnsight, a tutorial for language models
 usemathjax: true
 ---
 
@@ -10,7 +10,7 @@ nnsight is a python library for probing the inner workings of deep neural networ
 
 So I'm doing something slightly peculiar, I'm writing a tutorial for nnsight, but not for humans. The entire purpose of this tutorial is to teach LLMs how to use nnsight the way I use it in my projects. The following text will be placed in my .cursorrules file.
 
-# basic nnsight usage
+# Basic nnsight usage
 
 nnsight works by wrapping pytorch modules and allowing you to grab their activations and gradients at run time. First, let's use nnsight to interpret a simple MLP. We'll start by wrapping the MLP with nnsight.
 

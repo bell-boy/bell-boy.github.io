@@ -1,5 +1,5 @@
 ---
-title: Epileptic Uncertainty Framework Technical Report
+title: epileptic uncertainty framework technical report
 layout: post
 ---
 
@@ -48,7 +48,7 @@ For data with seizure that happen later than the MPH, the label is set to \\( \i
 
 I only train on a single patient due to not wanting to work on this project for another week.
 
-## Epileptic Uncertainty Framework
+## Epileptic uncertainty framework
 
 Under EUF, the model is represented as a function \\( f \\) which maps *data* to *distribution parameters*. What \\( f \\) is approximating is the conditional distribution \\( p(t \| \mathbf{X}) \\). In english, "the probablity density of a seizure happening in exactly \\( t \\) seconds from now given the EEG data"
 
@@ -123,7 +123,7 @@ This loss works very well to prevent Catastrophic Forgetting, without any hyperp
 
 When training the regression distribution I only train on positive samples. To prevent the classification head from updating I stop gradient flow from the MLE term of the optimization criterion. 
 
-### Training the Gaussian Head
+### Training the gaussian head
 
 When the family of distributions is Gaussian with differing variance, the regression is called *heteroskedastic*. Training heteroskdastic models can be hard, because of the first term in the loss function. Stirn et al. Identify this in their paper *Faithful Heteroskedastic Regression in Nueral Networks*[^4] and propose two measures to resolve it. 
 
@@ -186,7 +186,7 @@ Where the two families do differ though, is their interpretation. The distributi
 
 The interpretation of the Exponential is much more convient. "The probablity that you will have a seizure within \\( t \\) minutes is \\( p \\)." This warning time can be adjusted as needed to suit the patient.
 
-# Conclusion and Discussion
+# Conclusion and discussion
 
 Despite interesting inital results showing that the EUF is a strong alternative to the SF, there are many limitations to this work.
 

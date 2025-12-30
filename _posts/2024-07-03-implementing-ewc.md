@@ -14,7 +14,7 @@ The goal of Elastic Weight Consolidation (the main method described in the paper
 
 Elastic weight consolidation prevents this by figuring out which weights are important for a task, and which weights can be changed and penalizing the model for changeing these weights.
 
-# the theory behind it all
+# The theory behind it all
 
 The method is as follows. We are given a dataset \\( \mathcal{D} \\) which we split into two parts, \\(  \mathcal{D}_A \\) and \\(  \mathcal{D}_B \\). We've just finished training \\( \boldsymbol{\theta}_A \\) on dataset \\(  \mathcal{D}_A \\) and now we want to train on dataset \\(  \mathcal{D}_B \\). 
 
@@ -51,7 +51,7 @@ So the authors get clever. They use the diagonal of the FIM to approximate the r
 
 \\[  \mathcal{L}\_B(\boldsymbol{\theta}) + \sum_i \frac{\lambda}{2} \boldsymbol{F}\_i ( \theta_i -  \theta^\*_{A,i} )^2  \tag{5} \label{finloas} \\]
 
-# implementing the thing
+# Implementing the thing
 
 Before we talk about actual implementation, we should talk about the "tasks" we use to evaluate the method. 
 
@@ -81,7 +81,7 @@ Catastrophic forgetting is prevented at the cost of performance on future tasks.
 
 This is drastically better than *both* prior curves! The model retains above 80% accuracy on all tasks! This seems to be a miracle! Why isn't EWC more popular?!
 
-# caveats
+# Caveats
 
 Firstly, I just want to say equation \\(  \eqref{loglike} \\) is wrong. Bayes rule does not allow you to split the conditional like this. The correct form would be[^6]
 
@@ -99,7 +99,7 @@ Next, the paper layers approximation upon approximation. Using the 2nd order tay
 
 "Okay Femi," I hear you say. "EWC is built on shoddy approximations, whatever. Explain why it works so well?"
 
-## why does ewc work so well?
+## Why does ewc work so well?
 
 Emprically [Singh and Alistarh](https://arxiv.org/abs/2004.14340) observed that the FIM is a) a decent local approximation of the loss function, and b) mostly sparse off of the diagonal. That is not to say that the off diagonal terms wouldn't help considerably -- they would. I interpret these finding as, go ahead and use the diagonal if you *really* have too. It's better than nothing.
 
@@ -109,13 +109,13 @@ A much harder task is *Split MNIST*. Split MNIST doesn't have \\(  n! \\) possib
 
 Compare this to the ~90% global accurcay we had on permuted MNIST. So in conclusion, ...it kind of doesn't work.
 
-## femi, i've never even heard of continual learning
+## Femi, I've never even heard of continual learning
 
 Yeah, and for good reason. For larger models, one might argue it doesn't matter (see [Blessings of Scale](https://gwern.net/scaling-hypothesis#blessings-of-scale)). These models are so large and are pre-trained on so much data that they truly do not need continual learning. In fact, continual learning doesn't need continual learning!
 
 Naive Rehersal (just mixing in old training data) beats out *every single continual learning technique we have*![^7] One might argue that the whole field of continual learning is beyond useless. It's a collection of researchers working with their hands tied behind their backs and making progress there. I would agree for the most part. 
 
-# model pruning
+# Model pruning
 
 Don't get me wrong, CL techniques cannot work at a large scale, but they admit a useful application, *model pruning*. The (diagonal) Fisher Information Matrix allows you to (roughly) see which parameters are are important to performance, and which ones less so. 
 
@@ -140,7 +140,7 @@ Above is the sparsity graph of the model when ~20% of the weights are non-zero a
 
 We see these horizontal and vertical banding that happens across the network. It's my personal theory that this is caused by blank space in the input image. The model doesn't really need to read data at these points, thus the weights become redundant. 
 
-# conclusions & meta-lessons
+# Conclusions & meta-lessons
 
 So to recap, EWC prevents models from forgetting how to perform well on old data by quadratically approximating the loss on said old data around a minimum. This is of limited use for continual learning, but interesting for model pruning. 
 

@@ -10,7 +10,7 @@ The main motivation for doing something like this was noticing that the best eng
 
 # Design
 
-## Anatomy of a Tensor
+## Anatomy of a tensor
 
 In gooch, a tensor has two main parts:
 
@@ -59,7 +59,7 @@ To illustrate this point, lets look at another operation strides make easy, tran
 
 With only one tensor the problem is trival to solve -- always iterate over the index with the smallest stride first. But what happens when we want to elementwise multiply two tensors? What if the indices of their smallest strides don't line up? We'll have to figure out how to deal with this problem later.
 
-### Gradient Metadata
+### Gradient metadata
 
 This is where I made my first blunder. The way pytorch was organized pre-2017 (fact check needed) was in two parts ATen (short for "A tensor library") handled all tensor operations, while pytorch wrapped ATen and handled gradients. 
 

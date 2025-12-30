@@ -14,10 +14,16 @@
   <div style="display: flex; flex-direction: column;">
     <h1 style="font-size: 3em; margin-bottom: 0.1em;">femi bello</h1>
     <p>cs & mathematics major @ ut austin interested in ml<br>
-      contact me at femi [dot] bello [at] utexas [dot] edu<br><br>
-    <a href="https://x.com/0xf3mi" target="_blank">twitter</a> </p>
+      contact me at femi [dot] bello [at] utexas [dot] edu
+    <div style="word-spacing: 0.5em; padding: 0em;">
+      <a href="https://x.com/0xf3mi" target="_blank">twitter</a>
+      <a href="https://www.linkedin.com/in/femi-bello-bb984a284/" target="_blank">linkedin</a>
+    </div>
+   </p>
 
-    <h2 style="">writing</h2>
+   <h2>featured</h2>
+
+    <h2>writing</h2>
     <div style="display: flex; flex-direction: column; gap: 0.5em;">
       {% for post in site.posts %}
       <div class="post-card" onclick="window.open('{{ post.url }}','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
@@ -29,7 +35,7 @@
             {% assign minutes = 1 %}
           {% endif %}
           <p class="post-meta">{{ post.date | date: "%B %-d, %Y" }} · {{ minutes }} min read</p>
-          <p>{{ post.excerpt }}</p>
+          <div class="post-excerpt">{{ post.excerpt }}</div>
         </div>
         {% if post.image %}
           <img src="{{ post.image }}" alt="{{ post.title }}" style="width: 100px; height: 100px;" />

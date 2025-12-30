@@ -12,13 +12,13 @@ If the [Metaculus prediction market](https://www.metaculus.com/questions/5121/da
 
 I've spent the last couple of months in a state of mild anxiety about the future, mainly because I feel like I will have so little part in it. I'm writing this essay as a way to clarify my thoughts and determine my next steps.
 
-## What Would I Have Done If AGI Was More Than 10 Years Away?
+## What would I have done if AGI was more than 10 years away?
 
 I am an odd combination of ambitious yet aimless. I want to achieve something great, but most "great" things fail to move me. Going to space holds no value for me, devoting my life to helping people I'll never meet sounds mostly unpleasant, and amassing endless wealth feels meaningless. However, the last option provides great optionality, so I'd probably just pursue that and figure out the rest later.
 
 So, roughly, what I would want is *optionality*—the ability to decide later what I wanted to do with my life.
 
-## Toward Optionality
+## Toward optionality
 
 To me, optionality looks very different in different futures. So before I can think about optionality, I need to think about the futures I'm most likely to live in. Here are the most plausible ones, as I see them:
 
@@ -32,7 +32,7 @@ To me, optionality looks very different in different futures. So before I can th
 
 The key assumption across all these futures is that *I will not control the AGI*.
 
-### Alignment Failure / Singleton
+### Alignment failure / singleton
 
 At the moment, I do not have a detailed model of what alignment failure looks like, nor do I feel that building one would meaningfully change my actions. Even if I assume that AI models won’t be aligned by default, I strongly doubt that I could meaningfully contribute to solving the problem within six years. From my conversations and research, the alignment community does *not* seem bottlenecked by early-career talent.
 
@@ -42,7 +42,7 @@ That said, one could argue that the transition period between now and a mostly a
 
 Similarly, I am not interested in thinking too much about a singleton scenario, however likely it may be.
 
-### Massive Wealth Inequality
+### Massive wealth inequality
 
 This is a world where my choices may matter. Let’s assume that:
 

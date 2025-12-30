@@ -9,8 +9,8 @@ I implemented a 1 layer Feed Foward Network and trained it on (some of) MNIST. A
 
 It would help a lot to understand the basics of Deep Learning when reading this, but I'll try to make it accessible to anyone with a high level understanding of the field. 
 
-# before coding
-## the data
+# Before coding
+## The data
 
 MNIST is an image classification dataset consisting of labeled 28 by 28 grayscale images of digits from 0-9. The goal of the model is to correctly identify the label of each image.
 
@@ -29,7 +29,7 @@ The sum of these entries is one, meaning that it's a valid probablity distribtui
 
 Our model works purely with vectors and matricies, so we can flatten this 28 by 28 grid into a vector of dimension 784. To make things a little simpler, we can *batch* inputs to get a matrix of dimension \\(  784 \times N \\). Where \\( N \\) is the number of images in the matrix. Our output will then have the shape \\( 10 \times N \\).
 
-## the model
+## The model
 
 I started by writing out the model formally. Given some inputs \\(  X \\) (\\(  X \in \mathbb{R}^{784 \times N}  \\)) our model \\(  f(X) \\) is
 
@@ -47,7 +47,7 @@ The columns of \\( H_3 \\) aren't guaranteed to sum to one. So the **Softmax** f
 
 Together, all these equations make up what's called the **forward pass**, and is one half of the computation we'll need to do.
 
-## scratch, the programming langauge
+## Scratch, the programming langauge
 
 Scratch is pretty limited. 
 
@@ -59,8 +59,8 @@ Scratch doesn't have functions, or any sense of scope, so all variables are glob
 
 Messages are signals to various parts of the program. They singal for a block of code to start, but don't pass along any additional information. I rely on globally avalible buffers and careful reuse of variables to make the most of the messaging system.
 
-# coding 
-## init
+# Coding
+## Init
 
 While we can initalize the bias vectors at 0, the weights need to be initalized carefully to avoid vanishing/exploding gradients. The most common initalization is the **xaivier initalization**. In the xaiver init, the values of the weights are sampled from a normal distribution with variance 
 
@@ -81,7 +81,7 @@ To store these weights, I create a new scratch list for each one (*w_one, w_two*
 
 Notice, that the second random variable, \\( U_2 \\) is over \\(  [0, 360] \\) instead of \\(  [0, 2\pi] \\). Because of course, scratch operates in degrees. 
 
-## matrix multiplication
+## Matrix multiplication
 
 To implement matrix multiplication, I needed three things. 1. A way to treat 1D lists as 2D, 2. Some way to initate the operation, and 3. A place to store the result of the operation.
 
@@ -110,7 +110,7 @@ ReLU stands for *Rectified Linear Unit* and is what gives the model it's express
 
 \\[ \textrm{ReLU}(M)\_{i, j} = \max(0, M_{i, j}) \\]
 
-## logsumexp
+## Logsumexp
 The final layer is the softmax of every column in the matrix \\(  H_3 \\). Defined as 
 
 \\[  \textrm{Softmax}(H_3)_{i, j} = \frac{e^{H^3\_{i, j}}}{\sum_k e^{H^3\_{k, j}}} \\]
@@ -130,7 +130,7 @@ Now the denomanator of the softmax calculation is tricky to calculate. For numer
 It's beautiful.
 
 
-## the backward pass
+## The backward pass
 Fortunatly, the backward pass uses much of the same operations that the foward pass does. The only exception being the *Heavyside function*, which I'll describe later.
 
 At a high level, Gradient Descent works by finding the direction that loss decreases the most and making a small step in that direction. To find this direction, we find the gradient with repsect to the loss of all four of the trainable parameters. 
@@ -172,7 +172,7 @@ The *Heaviside function* is the derivative of the ReLU function, and is defined 
 
 Now all that's left to do is implement the fucntions, load in the data, and profit right?
 
-# then it all went horribly wrong
+# Then it all went horribly wrong
 
 You see, I've been spoiled by pytorch. I've never really had to think about how the arrays were stored under pytorch's hood. Yes I knew they were flat arrays for fast indexing, but *in what order*. Even though I had checked each matmul by had, I hadn't bothered to check the *order* of each array. When I say order, I mean the order the values exist in memory. 
 
@@ -192,7 +192,7 @@ To test everything, I created some dummy datapoints and had the model overfit to
 
 MNIST, was less beautiful. 
 
-# loading in the data
+# Loading in the data
 
 MNIST, despite being small by modern standards, is massive by scratch standards. It isn't possible to load the entire dataset into the input buffer, nor did I have the energy left to write a batch loader for a toy project. So I loaded in 250 datapoints and tried to make due with that. 
 
@@ -224,7 +224,7 @@ Training on 64 samples took 5+ hours on my machine, all for this depressing ass 
 
 So can you build a nerual network in scratch? Yes! Will it work? Well...
 
-# looking back
+# Looking back
 
 Why did it *really* fail to converge. Was it because of shoddy GPT math? Possibly. However, the model has everything pretty much stacked against it. 
 - Training is *unbearably* slow (in the time I might do 5 training steps on 250 samples, I could've finished 5 epochs on the full 60k images in the equivilant pytorch implementation) as a result even the 4 sample graph took around 15 mintues of training.  

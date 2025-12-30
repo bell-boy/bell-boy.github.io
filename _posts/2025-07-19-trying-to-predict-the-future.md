@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Trying To Predict The Future
+title: trying to predict the future
 usemathjax: true
 ---
 
