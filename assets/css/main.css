@@ -2,6 +2,18 @@ body {
   font-family: "Merriweather", serif;
 }
 
+body.home {
+  padding-left: 15em;
+  padding-right: 15em;
+}
+
+@media (max-width: 640px) {
+  body.home {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 a {
   border-bottom: 1px dotted rgba(34, 34, 34, .69);
   color: #ffc300;
@@ -10,4 +22,24 @@ a {
 
 h1, h2, h3, h4, h5, h6 {
   color:  #ffc300 ;
+}
+
+.home h2 {
+  letter-spacing: 0.05em;
+}
+
+.post-meta {
+  color: #777;
+  font-size: 0.8em;
+  margin-top: 0.2em;
+  margin-bottom: 0.6em;
+}
+
+.post-card:hover {
+  background-color: #f2f2f2;
+}
+
+.post-card {
+  padding: 0.6em 1.2em;
+  transition: background-color 150ms ease;
 }

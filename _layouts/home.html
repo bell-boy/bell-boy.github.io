@@ -10,18 +10,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
   <title>{{ site.title }}</title>
 </head>
-<body>
+<body class="home">
   <div style="display: flex; flex-direction: column;">
-    <h1 style="">femi bello</h1>
-    <p>cs & mathematics major interested in ml</p>
-    <p>contact me at femi [dot] bello [at] utexas [dot] edu </p>
+    <h1 style="font-size: 3em; margin-bottom: 0.1em;">femi bello</h1>
+    <p>cs & mathematics major @ ut austin interested in ml<br>
+      contact me at femi [dot] bello [at] utexas [dot] edu<br><br>
+    <a href="https://x.com/0xf3mi" target="_blank">twitter</a> </p>
 
-    <h2>writing/projects</h2>
-    <div style="display: grid; grid-template-columns: auto auto auto auto; gap: 0.2em;">
+    <h2 style="">writing</h2>
+    <div style="display: flex; flex-direction: column; gap: 0.5em;">
       {% for post in site.posts %}
+      <div class="post-card" onclick="window.open('{{ post.url }}','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div>
-          <a href="{{ post.url }}">{{ post.title }}</a>
+          <h3>{{ post.title }}</h3>
+          {% assign words = post.content | strip_html | split: ' ' | size %}
+          {% assign minutes = words | plus: 199 | divided_by: 200 %}
+          {% if minutes < 1 %}
+            {% assign minutes = 1 %}
+          {% endif %}
+          <p class="post-meta">{{ post.date | date: "%B %-d, %Y" }} · {{ minutes }} min read</p>
+          <p>{{ post.excerpt }}</p>
         </div>
+        {% if post.image %}
+          <img src="{{ post.image }}" alt="{{ post.title }}" style="width: 100px; height: 100px;" />
+        {% endif %}
+      </div>
       {% endfor %}
     </div>
   </div>
