@@ -209,8 +209,8 @@ Now that that's done, let's go through the optimizations I made one by one.
 ### decode
 
 Modern transformer inference can be broken up into two phases:
-1. Prefill, where we compute key and value vectors for each token in the sequence (For \(n\) tokens takes \(O(n^2\) time)
-2. Decode, where we take the cached key and value vectors for each token and use them compute the attention pattern for the latest token in \(O(n)\) time.
+1. Prefill, where we compute key and value vectors for each token in the sequence (For \\(n\\) tokens takes \\(O(n^2\\) time)
+2. Decode, where we take the cached key and value vectors for each token and use them compute the attention pattern for the latest token in \\(O(n)\\) time.
 
 Currently without a KV cache I'm stuck constantly doing prefill for every token -- tanking my performance.
 
