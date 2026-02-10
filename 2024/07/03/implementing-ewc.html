@@ -1,30 +1,34 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/assets/css/posts.css">
-  <link rel="stylesheet" href="/assets/css/main.css">
-  <link rel="stylesheet" href="/assets/css/code-style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
-  <title>implementing elastic weight consolidation</title>
-</head>
-<body>
-  <div class="main">
-    <header>
-      <h1>
-        implementing elastic weight consolidation
-      </h1>
-      <p>
-        <em>
-          published 07.03.2024
-        </em>
-      </p>
-    </header>
-    <a href="https://bell-boy.github.io">> return home</a>
-    <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/css/posts.css" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/code-style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
+      rel="stylesheet"
+    />
+    <title>implementing elastic weight consolidation</title>
+  </head>
+  <body class="post">
+    <div class="main">
+      <header class="post-header">
+        <h1>implementing elastic weight consolidation</h1>
+        <div class="post-meta-row">
+          <p class="post-meta">
+            <em>
+              07.03.2024    · 12 minute read
+            </em>
+          </p>
+          <a class="post-home-link" href="https://bell-boy.github.io">return home</a>
+        </div>
+      </header>
+      <hr />
+      <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
 
 <p>The goal of Elastic Weight Consolidation (the main method described in the paper) is to counteract catastrophic fogetting, a phenomena where nerual networks trained on multiple seperate tasks sequentially rapidly forget how to perform old tasks.</p>
 
@@ -32,7 +36,7 @@
 
 <p>Elastic weight consolidation prevents this by figuring out which weights are important for a task, and which weights can be changed and penalizing the model for changeing these weights.</p>
 
-<h1 id="the-theory-behind-it-all">the theory behind it all</h1>
+<h1 id="the-theory-behind-it-all">The theory behind it all</h1>
 
 <p>The method is as follows. We are given a dataset \( \mathcal{D} \) which we split into two parts, \(  \mathcal{D}_A \) and \(  \mathcal{D}_B \). We’ve just finished training \( \boldsymbol{\theta}_A \) on dataset \(  \mathcal{D}_A \) and now we want to train on dataset \(  \mathcal{D}_B \).</p>
 
@@ -69,7 +73,7 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
 
 <p>\[  \mathcal{L}_B(\boldsymbol{\theta}) + \sum_i \frac{\lambda}{2} \boldsymbol{F}_i ( \theta_i -  \theta^*_{A,i} )^2  \tag{5} \label{finloas} \]</p>
 
-<h1 id="implementing-the-thing">implementing the thing</h1>
+<h1 id="implementing-the-thing">Implementing the thing</h1>
 
 <p>Before we talk about actual implementation, we should talk about the “tasks” we use to evaluate the method.</p>
 
@@ -99,7 +103,7 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
 
 <p>This is drastically better than <em>both</em> prior curves! The model retains above 80% accuracy on all tasks! This seems to be a miracle! Why isn’t EWC more popular?!</p>
 
-<h1 id="caveats">caveats</h1>
+<h1 id="caveats">Caveats</h1>
 
 <p>Firstly, I just want to say equation \(  \eqref{loglike} \) is wrong. Bayes rule does not allow you to split the conditional like this. The correct form would be<sup id="fnref:6" role="doc-noteref"><a href="#fn:6" class="footnote" rel="footnote">6</a></sup></p>
 
@@ -119,7 +123,7 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
 
 <p>“Okay Femi,” I hear you say. “EWC is built on shoddy approximations, whatever. Explain why it works so well?”</p>
 
-<h2 id="why-does-ewc-work-so-well">why does ewc work so well?</h2>
+<h2 id="why-does-ewc-work-so-well">Why does ewc work so well?</h2>
 
 <p>Emprically <a href="https://arxiv.org/abs/2004.14340">Singh and Alistarh</a> observed that the FIM is a) a decent local approximation of the loss function, and b) mostly sparse off of the diagonal. That is not to say that the off diagonal terms wouldn’t help considerably – they would. I interpret these finding as, go ahead and use the diagonal if you <em>really</em> have too. It’s better than nothing.</p>
 
@@ -129,13 +133,13 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
 
 <p>Compare this to the ~90% global accurcay we had on permuted MNIST. So in conclusion, …it kind of doesn’t work.</p>
 
-<h2 id="femi-ive-never-even-heard-of-continual-learning">femi, i’ve never even heard of continual learning</h2>
+<h2 id="femi-ive-never-even-heard-of-continual-learning">Femi, I’ve never even heard of continual learning</h2>
 
 <p>Yeah, and for good reason. For larger models, one might argue it doesn’t matter (see <a href="https://gwern.net/scaling-hypothesis#blessings-of-scale">Blessings of Scale</a>). These models are so large and are pre-trained on so much data that they truly do not need continual learning. In fact, continual learning doesn’t need continual learning!</p>
 
 <p>Naive Rehersal (just mixing in old training data) beats out <em>every single continual learning technique we have</em>!<sup id="fnref:7" role="doc-noteref"><a href="#fn:7" class="footnote" rel="footnote">7</a></sup> One might argue that the whole field of continual learning is beyond useless. It’s a collection of researchers working with their hands tied behind their backs and making progress there. I would agree for the most part.</p>
 
-<h1 id="model-pruning">model pruning</h1>
+<h1 id="model-pruning">Model pruning</h1>
 
 <p>Don’t get me wrong, CL techniques cannot work at a large scale, but they admit a useful application, <em>model pruning</em>. The (diagonal) Fisher Information Matrix allows you to (roughly) see which parameters are are important to performance, and which ones less so.</p>
 
@@ -159,7 +163,7 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
 
 <p>We see these horizontal and vertical banding that happens across the network. It’s my personal theory that this is caused by blank space in the input image. The model doesn’t really need to read data at these points, thus the weights become redundant.</p>
 
-<h1 id="conclusions--meta-lessons">conclusions &amp; meta-lessons</h1>
+<h1 id="conclusions--meta-lessons">Conclusions &amp; meta-lessons</h1>
 
 <p>So to recap, EWC prevents models from forgetting how to perform well on old data by quadratically approximating the loss on said old data around a minimum. This is of limited use for continual learning, but interesting for model pruning.</p>
 
@@ -193,7 +197,7 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
   </ol>
 </div>
 
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
-</body>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+  </body>
 </html>

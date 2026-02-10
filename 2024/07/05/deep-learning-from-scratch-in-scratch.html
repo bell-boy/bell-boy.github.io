@@ -1,37 +1,41 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/assets/css/posts.css">
-  <link rel="stylesheet" href="/assets/css/main.css">
-  <link rel="stylesheet" href="/assets/css/code-style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
-  <title>deep learning from scratch, in scratch</title>
-</head>
-<body>
-  <div class="main">
-    <header>
-      <h1>
-        deep learning from scratch, in scratch
-      </h1>
-      <p>
-        <em>
-          published 07.05.2024
-        </em>
-      </p>
-    </header>
-    <a href="https://bell-boy.github.io">> return home</a>
-    <p>I recently spent the better part of last week doing exactly what the title says.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/css/posts.css" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/code-style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
+      rel="stylesheet"
+    />
+    <title>deep learning from scratch, in scratch</title>
+  </head>
+  <body class="post">
+    <div class="main">
+      <header class="post-header">
+        <h1>deep learning from scratch, in scratch</h1>
+        <div class="post-meta-row">
+          <p class="post-meta">
+            <em>
+              07.05.2024    · 13 minute read
+            </em>
+          </p>
+          <a class="post-home-link" href="https://bell-boy.github.io">return home</a>
+        </div>
+      </header>
+      <hr />
+      <p>I recently spent the better part of last week doing exactly what the title says.</p>
 
 <p>I implemented a 1 layer Feed Foward Network and trained it on (some of) MNIST. All in <a href="https://scratch.mit.edu/projects/1043415512">scratch</a>.</p>
 
 <p>It would help a lot to understand the basics of Deep Learning when reading this, but I’ll try to make it accessible to anyone with a high level understanding of the field.</p>
 
-<h1 id="before-coding">before coding</h1>
-<h2 id="the-data">the data</h2>
+<h1 id="before-coding">Before coding</h1>
+<h2 id="the-data">The data</h2>
 
 <p>MNIST is an image classification dataset consisting of labeled 28 by 28 grayscale images of digits from 0-9. The goal of the model is to correctly identify the label of each image.</p>
 
@@ -50,7 +54,7 @@
 
 <p>Our model works purely with vectors and matricies, so we can flatten this 28 by 28 grid into a vector of dimension 784. To make things a little simpler, we can <em>batch</em> inputs to get a matrix of dimension \(  784 \times N \). Where \( N \) is the number of images in the matrix. Our output will then have the shape \( 10 \times N \).</p>
 
-<h2 id="the-model">the model</h2>
+<h2 id="the-model">The model</h2>
 
 <p>I started by writing out the model formally. Given some inputs \(  X \) (\(  X \in \mathbb{R}^{784 \times N}  \)) our model \(  f(X) \) is</p>
 
@@ -68,7 +72,7 @@
 
 <p>Together, all these equations make up what’s called the <strong>forward pass</strong>, and is one half of the computation we’ll need to do.</p>
 
-<h2 id="scratch-the-programming-langauge">scratch, the programming langauge</h2>
+<h2 id="scratch-the-programming-langauge">Scratch, the programming langauge</h2>
 
 <p>Scratch is pretty limited.</p>
 
@@ -80,8 +84,8 @@
 
 <p>Messages are signals to various parts of the program. They singal for a block of code to start, but don’t pass along any additional information. I rely on globally avalible buffers and careful reuse of variables to make the most of the messaging system.</p>
 
-<h1 id="coding">coding</h1>
-<h2 id="init">init</h2>
+<h1 id="coding">Coding</h1>
+<h2 id="init">Init</h2>
 
 <p>While we can initalize the bias vectors at 0, the weights need to be initalized carefully to avoid vanishing/exploding gradients. The most common initalization is the <strong>xaivier initalization</strong>. In the xaiver init, the values of the weights are sampled from a normal distribution with variance</p>
 
@@ -102,7 +106,7 @@
 
 <p>Notice, that the second random variable, \( U_2 \) is over \(  [0, 360] \) instead of \(  [0, 2\pi] \). Because of course, scratch operates in degrees.</p>
 
-<h2 id="matrix-multiplication">matrix multiplication</h2>
+<h2 id="matrix-multiplication">Matrix multiplication</h2>
 
 <p>To implement matrix multiplication, I needed three things. 1. A way to treat 1D lists as 2D, 2. Some way to initate the operation, and 3. A place to store the result of the operation.</p>
 
@@ -131,7 +135,7 @@
 
 <p>\[ \textrm{ReLU}(M)_{i, j} = \max(0, M_{i, j}) \]</p>
 
-<h2 id="logsumexp">logsumexp</h2>
+<h2 id="logsumexp">Logsumexp</h2>
 <p>The final layer is the softmax of every column in the matrix \(  H_3 \). Defined as</p>
 
 <p>\[  \textrm{Softmax}(H_3)_{i, j} = \frac{e^{H^3_{i, j}}}{\sum_k e^{H^3_{k, j}}} \]</p>
@@ -150,7 +154,7 @@
 
 <p>It’s beautiful.</p>
 
-<h2 id="the-backward-pass">the backward pass</h2>
+<h2 id="the-backward-pass">The backward pass</h2>
 <p>Fortunatly, the backward pass uses much of the same operations that the foward pass does. The only exception being the <em>Heavyside function</em>, which I’ll describe later.</p>
 
 <p>At a high level, Gradient Descent works by finding the direction that loss decreases the most and making a small step in that direction. To find this direction, we find the gradient with repsect to the loss of all four of the trainable parameters.</p>
@@ -198,7 +202,7 @@
 
 <p>Now all that’s left to do is implement the fucntions, load in the data, and profit right?</p>
 
-<h1 id="then-it-all-went-horribly-wrong">then it all went horribly wrong</h1>
+<h1 id="then-it-all-went-horribly-wrong">Then it all went horribly wrong</h1>
 
 <p>You see, I’ve been spoiled by pytorch. I’ve never really had to think about how the arrays were stored under pytorch’s hood. Yes I knew they were flat arrays for fast indexing, but <em>in what order</em>. Even though I had checked each matmul by had, I hadn’t bothered to check the <em>order</em> of each array. When I say order, I mean the order the values exist in memory.</p>
 
@@ -218,7 +222,7 @@
 
 <p>MNIST, was less beautiful.</p>
 
-<h1 id="loading-in-the-data">loading in the data</h1>
+<h1 id="loading-in-the-data">Loading in the data</h1>
 
 <p>MNIST, despite being small by modern standards, is massive by scratch standards. It isn’t possible to load the entire dataset into the input buffer, nor did I have the energy left to write a batch loader for a toy project. So I loaded in 250 datapoints and tried to make due with that.</p>
 
@@ -250,7 +254,7 @@
 
 <p>So can you build a nerual network in scratch? Yes! Will it work? Well…</p>
 
-<h1 id="looking-back">looking back</h1>
+<h1 id="looking-back">Looking back</h1>
 
 <p>Why did it <em>really</em> fail to converge. Was it because of shoddy GPT math? Possibly. However, the model has everything pretty much stacked against it.</p>
 <ul>
@@ -300,7 +304,7 @@
 
 <p>onward to the next project.</p>
 
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
-</body>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+  </body>
 </html>

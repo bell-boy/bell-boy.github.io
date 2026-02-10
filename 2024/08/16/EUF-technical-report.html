@@ -1,30 +1,34 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/assets/css/posts.css">
-  <link rel="stylesheet" href="/assets/css/main.css">
-  <link rel="stylesheet" href="/assets/css/code-style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
-  <title>Epileptic Uncertainty Framework Technical Report</title>
-</head>
-<body>
-  <div class="main">
-    <header>
-      <h1>
-        Epileptic Uncertainty Framework Technical Report
-      </h1>
-      <p>
-        <em>
-          published 08.16.2024
-        </em>
-      </p>
-    </header>
-    <a href="https://bell-boy.github.io">> return home</a>
-    <p>I recently spent a couple months working on a research project. The goal was to submit to NeurIPS’ new High School track. I’d never done something like this, and I learned a lot about doing ML research by trying.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/css/posts.css" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/code-style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
+      rel="stylesheet"
+    />
+    <title>epileptic uncertainty framework technical report</title>
+  </head>
+  <body class="post">
+    <div class="main">
+      <header class="post-header">
+        <h1>epileptic uncertainty framework technical report</h1>
+        <div class="post-meta-row">
+          <p class="post-meta">
+            <em>
+              08.16.2024    · 13 minute read
+            </em>
+          </p>
+          <a class="post-home-link" href="https://bell-boy.github.io">return home</a>
+        </div>
+      </header>
+      <hr />
+      <p>I recently spent a couple months working on a research project. The goal was to submit to NeurIPS’ new High School track. I’d never done something like this, and I learned a lot about doing ML research by trying.</p>
 
 <p>I’ll split this post into two parts. This part will be more technical, describing the results. I really don’t feel like writing another research paper about this, so this blog post will have to do.</p>
 
@@ -69,7 +73,7 @@
 
 <p>I only train on a single patient due to not wanting to work on this project for another week.</p>
 
-<h2 id="epileptic-uncertainty-framework">Epileptic Uncertainty Framework</h2>
+<h2 id="epileptic-uncertainty-framework">Epileptic uncertainty framework</h2>
 
 <p>Under EUF, the model is represented as a function \( f \) which maps <em>data</em> to <em>distribution parameters</em>. What \( f \) is approximating is the conditional distribution \( p(t | \mathbf{X}) \). In english, “the probablity density of a seizure happening in exactly \( t \) seconds from now given the EEG data”</p>
 
@@ -144,7 +148,7 @@
 
 <p>When training the regression distribution I only train on positive samples. To prevent the classification head from updating I stop gradient flow from the MLE term of the optimization criterion.</p>
 
-<h3 id="training-the-gaussian-head">Training the Gaussian Head</h3>
+<h3 id="training-the-gaussian-head">Training the gaussian head</h3>
 
 <p>When the family of distributions is Gaussian with differing variance, the regression is called <em>heteroskedastic</em>. Training heteroskdastic models can be hard, because of the first term in the loss function. Stirn et al. Identify this in their paper <em>Faithful Heteroskedastic Regression in Nueral Networks</em><sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup> and propose two measures to resolve it.</p>
 
@@ -252,7 +256,7 @@
 
 <p>The interpretation of the Exponential is much more convient. “The probablity that you will have a seizure within \( t \) minutes is \( p \).” This warning time can be adjusted as needed to suit the patient.</p>
 
-<h1 id="conclusion-and-discussion">Conclusion and Discussion</h1>
+<h1 id="conclusion-and-discussion">Conclusion and discussion</h1>
 
 <p>Despite interesting inital results showing that the EUF is a strong alternative to the SF, there are many limitations to this work.</p>
 
@@ -300,7 +304,7 @@
   </ol>
 </div>
 
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
-</body>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+  </body>
 </html>

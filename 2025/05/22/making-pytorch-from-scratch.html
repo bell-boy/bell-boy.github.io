@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/css/posts.css" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/code-style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
+      rel="stylesheet"
+    />
+    <title>making pytorch from scratch in c++</title>
+  </head>
+  <body class="post">
+    <div class="main">
+      <header class="post-header">
+        <h1>making pytorch from scratch in c++</h1>
+        <div class="post-meta-row">
+          <p class="post-meta">
+            <em>
+              05.22.2025    · 11 minute read
+            </em>
+          </p>
+          <a class="post-home-link" href="https://bell-boy.github.io">return home</a>
+        </div>
+      </header>
+      <hr />
+      <p><em>tl;dr: [WIP] I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and Transformer infrence on CPU. The code is open source and available on <a href="https://github.com/bell-boy/deeptiny/tree/main">GitHub</a>. I go into the details of how I built it, why I made certain design choices, and what I learned from the process.</em></p>
+
+<p>I’ve wanted to create a project like this for a while now, and when we were told that we would have freedom to build anything computer architecture related for our final project, I knew it was time.</p>
+
+<p>The main motivation for doing something like this was noticing that the best engineers at big labs (Google, OAI, Anthropic) also tend to be the best researchers. So while building theoretical knowledge seemed straightforward, building engineering skill seemed less clear cut. I thought this project was the perfect opportunity for me to get my feet wet!</p>
+
+<p>I’m going to assume that you have some familiarty with the notion of gradient descent, c++, and pytorch, but I’ll try to keep the rest fairly accessible.</p>
+
+<p>The first half will focus on the design, and the second half on low level optimizations to make things go fast.</p>
+
+<h1 id="theory">theory</h1>
+
+<p>At the core of any modern deep learning framework is the concept of automatic differentiation. This allows us to compute gradients efficiently, which is essential for training neural networks. 
+The most common method for automatic differentiation is reverse-mode differentiation, which is what PyTorch uses.
+Reverse mode differentiation works by building a computational graph of the operations performed on tensors, and then traversing this graph in reverse to compute gradients.</p>
+
+<p>For example, let’s take the code</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]</span>
+<span class="n">z</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">&gt;</span>  <span class="c1"># dot product
+</span><span class="n">z</span><span class="p">.</span><span class="nf">backward</span><span class="p">()</span>  <span class="c1"># compute gradients
+</span></code></pre></div></div>
+<p>Reverse mode stards by building a computational graph that looks like this:</p>
+
+<p><img src="/assets/images/making-pytorch/comp_graph_1.png" alt="comp_graph_1" /></p>
+
+<p>You’ll note that we have two types of nodes: data nodes (the circles) and operation nodes (the squares). The data nodes represent the tensors, while the operation nodes represent the operations performed on those tensors.</p>
+
+<p>When we call <code class="language-plaintext highlighter-rouge">z.backward()</code>, we do two things</p>
+<ol>
+  <li>Define the gradient of the output node (in this case, <code class="language-plaintext highlighter-rouge">z</code>) to be 1. This is because we want to compute the gradient of <code class="language-plaintext highlighter-rouge">z</code> with respect to itself, which is always 1.</li>
+  <li>Traverse the graph in reverse, applying the chain rule to compute the gradients of the input nodes (in this case, <code class="language-plaintext highlighter-rouge">x</code> and <code class="language-plaintext highlighter-rouge">y</code>).</li>
+</ol>
+
+<p>Let’s try a more complex example:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">A</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]]</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">x</span>  <span class="c1"># matrix-vector multiplication
+</span><span class="n">z</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="o">&gt;</span> <span class="c1"># dot product
+</span><span class="n">z</span><span class="p">.</span><span class="nf">backward</span><span class="p">()</span>  <span class="c1"># compute gradients
+</span></code></pre></div></div>
+<p>The compuational graph now looks like so:</p>
+
+<p><img src="/assets/images/making-pytorch/comp_graph_2.png" alt="comp_graph_2" /></p>
+
+<p>You’ll notice that x now has two edges coming out of it, one to the matrix-vector multiplication node and one to the dot product node.</p>
+
+<p>Reverse mode differentiation handles this nicely, the true gradient of x is the sum of the gradients from both paths. So when we traverse the graph in reverse, we compute the gradient from the dot product node and add it to the gradient from the matrix-vector multiplication node.</p>
+
+<h1 id="design">design</h1>
+
+<p>I was heavily inspired by the design of PyTorch, specifically, <a href="https://blog.ezyang.com/2019/05/pytorch-internals/">this blog</a> on pytorch’s internals by Edward Yang.
+I didn’t want to just copy PyTorch, so I went through the process of designing my own framework from scratch after reading this, but I did borrow some ideas from PyTorch’s design.</p>
+
+<p>The core of the library is the <code class="language-plaintext highlighter-rouge">Tensor</code> class, which is small enough that I can paste it below:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Tensor</span> <span class="p">{</span>
+ <span class="nl">protected:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="o">&gt;</span> <span class="n">tensor_impl_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">AutogradMeta</span><span class="o">&gt;</span> <span class="n">autograd_meta_</span><span class="p">;</span>
+
+  <span class="n">Tensor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="o">&gt;</span> <span class="n">tensor_impl</span><span class="p">,</span>
+         <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">AutogradMeta</span><span class="o">&gt;</span> <span class="n">autograd_meta</span><span class="p">);</span>
+
+ <span class="nl">public:</span>
+  <span class="c1">// Create a a contingous tensor with uninitialized data</span>
+  <span class="n">Tensor</span><span class="p">(</span><span class="n">Shape</span> <span class="n">shape</span><span class="p">,</span> <span class="n">DType</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">Device</span> <span class="n">device</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">requires_grad</span><span class="p">);</span>
+
+  <span class="n">View</span> <span class="k">operator</span><span class="p">()(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slice</span><span class="o">&gt;</span> <span class="n">slices</span><span class="p">);</span>
+  <span class="k">const</span> <span class="n">View</span> <span class="k">operator</span><span class="p">()(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slice</span><span class="o">&gt;</span> <span class="n">slices</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">Shape</span> <span class="n">shape</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">DType</span> <span class="n">dtype</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">Device</span> <span class="n">device</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="n">Clone</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="n">Squeeze</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;&amp;</span> <span class="n">dims</span><span class="p">);</span>
+  <span class="kt">bool</span> <span class="n">requires_grad</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">grad</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="n">Backward</span><span class="p">(</span><span class="kt">bool</span> <span class="n">keep_graph</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
+
+  <span class="cm">/**
+   * Creates a tensor on the CPU with the expectation that the bytes are laid
+   * out in row-major order
+   */</span>
+  <span class="k">static</span> <span class="n">Tensor</span> <span class="n">FromBuffer</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">byte</span><span class="o">&gt;</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">Shape</span> <span class="n">shape</span><span class="p">,</span>
+                           <span class="n">DType</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">DType</span><span class="o">::</span><span class="n">Float32</span><span class="p">,</span>
+                           <span class="n">Device</span> <span class="n">device</span> <span class="o">=</span> <span class="n">Device</span><span class="o">::</span><span class="n">CPU</span><span class="p">,</span>
+                           <span class="kt">bool</span> <span class="n">requires_grad</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="k">operator</span><span class="o">+=</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="k">operator</span><span class="o">-=</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="k">operator</span><span class="o">*=</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="k">operator</span><span class="o">/=</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">);</span>
+
+  <span class="k">friend</span> <span class="k">struct</span> <span class="nc">utils</span><span class="o">::</span><span class="n">TensorAccessor</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>We’ll explain all of this in due time, but for now, let’s focus on the first two members: <code class="language-plaintext highlighter-rouge">tensor_impl_</code> and <code class="language-plaintext highlighter-rouge">autograd_meta_</code>.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">tensor_impl_</code> is a pointer to the actual data of the tensor, as well as some metadata about the tensor (shape, dtype, device).</p>
+
+<p>In contrast the <code class="language-plaintext highlighter-rouge">autograd_meta_</code> is a pointer to the metadata that we need for automatic differentiation. This includes things like the gradient of the tensor, the operation that created the tensor, and the tensors that were used to create the tensor.</p>
+
+<p>The key takeaway here is that the data and the metadata are completely separate, and interact in only a few key places. We’ll take advantage of this seperation later.</p>
+
+<h2 id="tensor-impl">tensor impl</h2>
+<p>The <code class="language-plaintext highlighter-rouge">TensorImpl</code> class is a bit more complex, but the main idea is that it’s an interface that tell us how to interact with the data of the tensor.</p>
+
+<p>The hardware has no notion of “vectors” or “matrices”, it only knows about lists of bytes. So the <code class="language-plaintext highlighter-rouge">TensorImpl</code> class is responsible for two things</p>
+<ol>
+  <li>Managing a chunk of memory that holds our bytes</li>
+  <li>Telling us how to interpret those bytes as a mathematical object.</li>
+</ol>
+
+<p>To handle the first responsibility, each <code class="language-plaintext highlighter-rouge">TensorImpl</code> owns an instance of a <code class="language-plaintext highlighter-rouge">Storage</code> object. The <code class="language-plaintext highlighter-rouge">Storage</code> abstract base class is responsible for defining an API for a managed chunk of memory on the device (CPU, GPU, etc) we’re computing on.</p>
+
+<p>It also handles <em>versioning</em>, a fancy term for keeping track of modifications to it’s underlying data. In short, everytime the underlying data is modified, we increment a version number. 
+The utility of versioning is hard to see now, but will really shine once we start talking about the backward pass.</p>
+
+<p>To understand how <code class="language-plaintext highlighter-rouge">TensorImpl</code> handles the second responsiblity, we have to talk about strided representations.</p>
+
+<h3 id="strided-represntations">strided represntations</h3>
+<p>The crux of the second responsiblity is this – how do I assign each entry of a multi-dimensional array to a location in memory?</p>
+
+<p>Strided representations solve this problem by specifiying one scalar and two lists of numbers: the <em>offset</em>, <em>shape</em>, and <em>stride</em>.</p>
+
+<p>As a running example, let’s say we want to represent the <code class="language-plaintext highlighter-rouge">(3, 2)</code> Tensor <code class="language-plaintext highlighter-rouge">x = [[1,2,3],[4,5,6]]</code>. 
+Now there are a total of six indices we can access – from <code class="language-plaintext highlighter-rouge">(0, 0)</code> to <code class="language-plaintext highlighter-rouge">(2, 1)</code>.</p>
+
+<p>The <em>shape</em> is a concise way to specify this set of valid indexes (or, as we’ll see later, a set of valid <em>slices</em>). Since the shape is (3, 2), in the first slot we can place any number from 0 to 2 inclusive, while in the second slot we can only place any number from 0 to 1.</p>
+
+<p>The combination of <em>stride</em> + <em>offset</em> is how we map these indices to memory locations. In a majority of cases, <code class="language-plaintext highlighter-rouge">x</code> has stride <code class="language-plaintext highlighter-rouge">(2, 1)</code> and an offset of <code class="language-plaintext highlighter-rouge">0</code>. The best way to show you what this means is to walk through an example</p>
+
+<p>Say we want to find <code class="language-plaintext highlighter-rouge">x[2, 1]</code>. We’d take each index value and multiply it by it’s corresponding stride, sum it up, and add the offset.</p>
+
+<p>In this case we’d get <code class="language-plaintext highlighter-rouge">location = 2 * 2 + 1 * 1 + 0 = 5</code>. That’d tell us where to look within the memory buffer managed by the <code class="language-plaintext highlighter-rouge">Storage</code> object.</p>
+
+<p>Below is a concise visual mapping from tensor to memory location</p>
+
+<p><img src="/assets/images/making-pytorch/mem_map.png" alt="" /></p>
+
+<p>Strides are more flexible than this simple example however, they enable <em>slices</em>, – creating a smaller tensor from a larger once</p>
+
+<p>Say we want to treat the second column of <code class="language-plaintext highlighter-rouge">x</code> as a vector <code class="language-plaintext highlighter-rouge">v=[2, 5]</code>. Instead of creating a new <code class="language-plaintext highlighter-rouge">Storage</code> object, <code class="language-plaintext highlighter-rouge">v</code> and <code class="language-plaintext highlighter-rouge">x</code> can share one.</p>
+
+<p>What’s <code class="language-plaintext highlighter-rouge">v</code>’s shape, stride and offset? It’s clear that the shape is <code class="language-plaintext highlighter-rouge">(2)</code>, but the stride is now <code class="language-plaintext highlighter-rouge">(2)</code> (since our elements are now 2 apart from each other in the buffer). Since the first element is now <code class="language-plaintext highlighter-rouge">2</code> our offset is also <code class="language-plaintext highlighter-rouge">2</code></p>
+
+<p><img src="/assets/images/making-pytorch/mem_map2.png" alt="" /></p>
+
+<p>Strides are incredibly useful, they prevent massive amounts of wasteful copying throughout our programs.
+At the same time, we’ll soon see that strides are also a <em>massive</em> headache when it comes to the backward pass.</p>
+
+<p>So in summary, the <code class="language-plaintext highlighter-rouge">TensorImpl</code> class is little more than just a <code class="language-plaintext highlighter-rouge">Storage</code> object + shape + stride + offset. That’s all we need to go off to the races.</p>
+
+<h2 id="autograd-meta">autograd meta</h2>
+<p>Let’s go back to our complicated example from earlier.</p>
+
+<p><img src="/assets/images/making-pytorch/comp_graph_2.png" alt="comp_graph_2" /></p>
+
+<p>Just like there are two types of nodes, there are really two types of autograd metadata: <code class="language-plaintext highlighter-rouge">AutogradMeta</code> and <code class="language-plaintext highlighter-rouge">Function</code></p>
+
+<p><code class="language-plaintext highlighter-rouge">AutogradMeta</code>’s most important member is it’s <code class="language-plaintext highlighter-rouge">std::shared_ptr&lt;Tensor&gt; grad_</code>.
+This is where, on completion of the backward pass, gradients will live. <code class="language-plaintext highlighter-rouge">AutogradMeta</code> has an <code class="language-plaintext highlighter-rouge">updateGrad</code> method used to add to the gradient tensor.</p>
+
+<p>Making our grad objects <code class="language-plaintext highlighter-rouge">Tensors</code> themselves cleanly gives us the ability to do <em>higher order differientiation</em> if we so desire.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Function</code> is an abstract base class that each operation implements, it’s a recipe to get from upstream gradients to downstream gradients. It has two key properties:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">std::vector&lt;std::strong_ptr&lt;AutogradMeta&gt;&gt; parents_</code>: The upstream inputs used to create this node.</li>
+  <li><code class="language-plaintext highlighter-rouge">void operator()(const Tensor&amp; grad)</code>: The backward function used to compute parent gradents. It calls <code class="language-plaintext highlighter-rouge">updateGrad</code> on each of it’s parent</li>
+</ol>
+
+<p>In addition each gradient has a <code class="language-plaintext highlighter-rouge">Context</code> object, which can store <code class="language-plaintext highlighter-rouge">Tensors</code> for later use.
+This object automatically checks versioning mentioned earlier, so even if the tensor is modified after it’s saved, gradients won’t be incorrect silently.</p>
+
+<p>The last key player is the <code class="language-plaintext highlighter-rouge">Engine</code> object. It’s responsible for traversing the graph and calling backward on tensors that have recieved all their downstream gradients and are ready to update their parents.</p>
+
+<p>Alright, let’s walk through this example.</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">z</code>’s <code class="language-plaintext highlighter-rouge">AutogradMeta</code> calls the <code class="language-plaintext highlighter-rouge">operator()(const Tensor &amp;a)</code> with on it’s <code class="language-plaintext highlighter-rouge">InnerProductBackward</code> <code class="language-plaintext highlighter-rouge">Function</code> instance. This updates the gradients for both <code class="language-plaintext highlighter-rouge">x</code> and <code class="language-plaintext highlighter-rouge">y</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">y</code> is now ready to call it’s backward function – <code class="language-plaintext highlighter-rouge">MatrixVectorBackward</code> and update the gradients for both <code class="language-plaintext highlighter-rouge">A</code> and <code class="language-plaintext highlighter-rouge">x</code>.</li>
+  <li>Both <code class="language-plaintext highlighter-rouge">A</code> and <code class="language-plaintext highlighter-rouge">x</code> are completely done, but they don’t have <code class="language-plaintext highlighter-rouge">Function</code>s attached to their <code class="language-plaintext highlighter-rouge">AutogradMeta</code>’s – in other words, they’re <em>leaf nodes</em>. We’re now done!</li>
+</ol>
+
+<h1 id="optimizing">optimizing</h1>
+
+<p>While the above is a good primer to how the library is laid out, I’ve intentionally ommited a lot of boring details about how code is structured internally &amp; externally (kernel dispatch, public apis, utilites, testing, etc.). 
+I think a better way to get these ideas is to walk through the process of optimizng various parts of it for faster inference.</p>
+
+<p>I’ll be implmenting inference and LORA finetuning on hugging-face’s <a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct">SmolLM2-135M-Instruct</a>.</p>
+
+<p>All of the code described here can be found in the <code class="language-plaintext highlighter-rouge">demo/transfomer-demo</code> folder within the git repo.</p>
+
+<h2 id="inference">inference</h2>
+<p>At a high level, inference is just tokenization -&gt; embedding -&gt; model -&gt; sample -&gt; de-tokenization.
+My library is primarly focused on the middle three steps, so I’ll use the excellent <a href="https://github.com/mlc-ai/tokenizers-cpp#">mlc-ai/tokenizers-cpp</a> library to handle the outer steps for me.</p>
+
+<p>To start, I very quickly wrote a refrence implementation with none of the common optimizations of modern models. That means no KV-Cache, no fused ops, etc.
+None of the fancy wheels of modern models except for 1. 
+Since SmolLM2-135M-Instruct is a Llama style model with Grouped Query Attention (GQA) (an architectural attention optimization) I was forced to implement this from the get go.</p>
+
+<p>Now that that’s done, let’s go through the optimizations I made one by one.</p>
+
+<h3 id="decode">decode</h3>
+
+<p>Modern transformer inference can be broken up into two phases:</p>
+<ol>
+  <li>Prefill, where we compute key and value vectors for each token in the sequence (For (n) tokens takes (O(n^2) time)</li>
+  <li>Decode, where we take the cached key and value vectors for each token and use them compute the attention pattern for the latest token in (O(n)) time.</li>
+</ol>
+
+<p>Currently without a KV cache I’m stuck constantly doing prefill for every token – tanking my performance.</p>
+
+<p>Surprisingly though, most of our inference costs were coming not from attention, but instead from the <em>Reduce</em> operation used in multiple places.</p>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
+  </body>
+</html>

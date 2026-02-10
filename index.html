@@ -7,33 +7,89 @@
   <link rel="stylesheet" href="/assets/css/main.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
   <title>fbello</title>
 </head>
-<body>
+<body class="home">
   <div style="display: flex; flex-direction: column;">
-    <h1 style="">femi bello</h1>
-    <p>cs & mathematics major interested in ml</p>
-    <p>contact me at femi [dot] bello [at] utexas [dot] edu </p>
+    <h1 style="font-size: 3em; margin-bottom: 0.1em;">femi bello</h1>
+    <p>cs & mathematics major @ ut austin interested in ml<br>
+      contact me at femi [dot] bello [at] utexas [dot] edu
+    <div style="word-spacing: 0.5em; padding: 0em;">
+      <a href="https://x.com/0xf3mi" target="_blank">twitter</a>
+      <a href="https://www.linkedin.com/in/femi-bello-bb984a284/" target="_blank">linkedin</a>
+    </div>
+   </p>
 
-    <h2>writing/projects</h2>
-    <div style="display: grid; grid-template-columns: auto auto auto auto; gap: 0.2em;">
+   <h2>featured</h2>
+
+    <h2>writing</h2>
+    <div style="display: flex; flex-direction: column; gap: 0.5em;">
       
+      <div class="post-card" onclick="window.open('/2025/05/22/making-pytorch-from-scratch.html','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div>
-          <a href="/2025/02/08/thoughts-on-the-eve-of-agi.html">thoughts on the eve of agi</a>
+          <h3>making pytorch from scratch in c++</h3>
+          
+          
+          
+          <p class="post-meta">May 22, 2025 · 11 min read</p>
+          <div class="post-excerpt"><p><em>tl;dr: [WIP] I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and Transformer infrence on CPU. The code is open source and available on <a href="https://github.com/bell-boy/deeptiny/tree/main">GitHub</a>. I go into the details of how I built it, why I made certain design choices, and what I learned from the process.</em></p>
+</div>
         </div>
+        
+      </div>
       
+      <div class="post-card" onclick="window.open('/2025/02/08/thoughts-on-the-eve-of-agi.html','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div>
-          <a href="/2024/08/16/EUF-technical-report.html">Epileptic Uncertainty Framework Technical Report</a>
+          <h3>thoughts on the eve of agi</h3>
+          
+          
+          
+          <p class="post-meta">February 8, 2025 · 7 min read</p>
+          <div class="post-excerpt"><p>It is sobering to think that when I ask GPT-4 to edit this essay, it will almost certainly produce something better than I could’ve on my own.</p>
+</div>
         </div>
+        
+      </div>
       
+      <div class="post-card" onclick="window.open('/2024/08/16/EUF-technical-report.html','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div>
-          <a href="/2024/07/05/deep-learning-from-scratch-in-scratch.html">deep learning from scratch, in scratch</a>
+          <h3>epileptic uncertainty framework technical report</h3>
+          
+          
+          
+          <p class="post-meta">August 16, 2024 · 13 min read</p>
+          <div class="post-excerpt"><p>I recently spent a couple months working on a research project. The goal was to submit to NeurIPS’ new High School track. I’d never done something like this, and I learned a lot about doing ML research by trying.</p>
+</div>
         </div>
+        
+      </div>
       
+      <div class="post-card" onclick="window.open('/2024/07/05/deep-learning-from-scratch-in-scratch.html','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div>
-          <a href="/2024/07/03/implementing-ewc.html">implementing elastic weight consolidation</a>
+          <h3>deep learning from scratch, in scratch</h3>
+          
+          
+          
+          <p class="post-meta">July 5, 2024 · 13 min read</p>
+          <div class="post-excerpt"><p>I recently spent the better part of last week doing exactly what the title says.</p>
+</div>
         </div>
+        
+      </div>
+      
+      <div class="post-card" onclick="window.open('/2024/07/03/implementing-ewc.html','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
+        <div>
+          <h3>implementing elastic weight consolidation</h3>
+          
+          
+          
+          <p class="post-meta">July 3, 2024 · 12 min read</p>
+          <div class="post-excerpt"><p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
+</div>
+        </div>
+        
+      </div>
       
     </div>
   </div>

@@ -3,6 +3,16 @@
   margin: 0 auto;
 }
 
+.post-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1em;
+  flex-wrap: wrap;
+  flex-direction: row;
+  font-size: 0.95em;
+}
+
 img {
   max-width: min(40em, 100%);
 }
