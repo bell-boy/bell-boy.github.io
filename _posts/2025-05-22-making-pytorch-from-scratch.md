@@ -4,7 +4,7 @@ title: making pytorch from scratch in c++
 usemathjax: true
 ---
 
-_tl;dr: [WIP] I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and Transformer infrence on CPU. The code is open source and available on [GitHub](https://github.com/bell-boy/deeptiny/tree/main). I go into the details of how I built it, why I made certain design choices, and what I learned from the process._
+_tl;dr: I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and Transformer infrence on CPU. The code is open source and available on [GitHub](https://github.com/bell-boy/deeptiny/tree/main). I go into the details of how I built it, why I made certain design choices, and what I learned from the process. [blog post in progress]_
 
 I've wanted to create a project like this for a while now, and when we were told that we would have freedom to build anything computer architecture related for our final project, I knew it was time. 
 
