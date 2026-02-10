@@ -237,8 +237,8 @@ Since SmolLM2-135M-Instruct is a Llama style model with Grouped Query Attention 
 
 <p>Modern transformer inference can be broken up into two phases:</p>
 <ol>
-  <li>Prefill, where we compute key and value vectors for each token in the sequence (For (n) tokens takes (O(n^2) time)</li>
-  <li>Decode, where we take the cached key and value vectors for each token and use them compute the attention pattern for the latest token in (O(n)) time.</li>
+  <li>Prefill, where we compute key and value vectors for each token in the sequence (For \(n\) tokens takes \(O(n^2\) time)</li>
+  <li>Decode, where we take the cached key and value vectors for each token and use them compute the attention pattern for the latest token in \(O(n)\) time.</li>
 </ol>
 
 <p>Currently without a KV cache I’m stuck constantly doing prefill for every token – tanking my performance.</p>
