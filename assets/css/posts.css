@@ -1,26 +1,28 @@
 .main {
-  max-width: min(40em, 100%);
-  margin: 0 auto;
+    max-width: min(40em, 100%);
+    margin: 0 auto;
 }
 
 .post-meta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1em;
-  flex-wrap: wrap;
-  flex-direction: row;
-  font-size: 0.95em;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1em;
+    flex-wrap: wrap;
+    flex-direction: row;
+    font-size: 0.95em;
 }
 
 img {
-  max-width: min(40em, 100%);
+    max-width: min(40em, 100%);
+    display: block;
+    margin: auto;
 }
 
 div.highlight {
-  overflow-x: scroll;
+    overflow-x: scroll;
 }
 
 table {
-  margin: 0 auto;
+    margin: 0 auto;
 }
