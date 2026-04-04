@@ -2,6 +2,8 @@
 layout: post
 title: making pytorch from scratch in c++
 usemathjax: true
+featured: true
+featured_order: 1
 ---
 
 _tl;dr: I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and can run a 135 Million paramter LLM on my M2 MacBook Air. The code is open source and available on [GitHub](https://github.com/bell-boy/deeptiny/tree/main). I go into the details of how I built it, why I made certain design choices, and what I learned from the process._

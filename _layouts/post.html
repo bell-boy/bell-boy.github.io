@@ -1,50 +1,69 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="{{ '/assets/css/posts.css' }}" />
-    <link rel="stylesheet" href="{{ '/assets/css/main.css' }}" />
-    <link rel="stylesheet" href="{{ '/assets/css/code-style.css' }}" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
-      rel="stylesheet"
-    />
-    <title>{{ page.title }}</title>
-  </head>
-  <body class="post">
-    <div class="main">
-      <header class="post-header">
-        <h1>{{ page.title }}</h1>
-        <div class="post-meta-row">
-          <p class="post-meta">
-            <em>
-              {{ page.date | date: "%m.%d.%Y"}} {% assign words = page.content |
-              strip_html | split: ' ' | size %} {% assign minutes = words |
-              plus: 199 | divided_by: 200 %} {% if minutes < 1 %} {% assign
-              minutes = 1 %} {% endif %} · {{minutes}} minute read
-            </em>
-          </p>
-          <a class="post-home-link" href="{{ site.url }}">return home</a>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="{{ '/assets/css/posts.css' }}" />
+        <link rel="stylesheet" href="{{ '/assets/css/main.css' }}" />
+        <link rel="stylesheet" href="{{ '/assets/css/code-style.css' }}" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <title>{{ page.title }}</title>
+    </head>
+    <body class="post">
+        <div class="main">
+            <header class="post-header">
+                <h1>{{ page.title }}</h1>
+                <div class="post-meta-row">
+                    <p class="post-meta">
+                        <em>
+                            {{ page.date | date: "%m.%d.%Y"}} {% assign words =
+                            page.content | strip_html | split: ' ' | size %} {%
+                            assign minutes = words | plus: 199 | divided_by: 200
+                            %} {% if minutes < 1 %} {% assign minutes = 1 %} {%
+                            endif %} · {{minutes}} minute read
+                        </em>
+                    </p>
+                    <a class="post-home-link" href="{{ site.url }}"
+                        >return home</a
+                    >
+                </div>
+            </header>
+            <hr />
+            {{ content }}
         </div>
-      </header>
-      <hr />
-      {{ content }}
-    </div>
-    <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']],
-          processEscapes: true
-        },
-        options: {
-          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-        }
-      };
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
-  </body>
+        <script>
+            window.MathJax = {
+                tex: {
+                    inlineMath: [
+                        ["$", "$"],
+                        ["\\(", "\\)"],
+                    ],
+                    displayMath: [
+                        ["$$", "$$"],
+                        ["\\[", "\\]"],
+                    ],
+                    processEscapes: true,
+                },
+                options: {
+                    skipHtmlTags: [
+                        "script",
+                        "noscript",
+                        "style",
+                        "textarea",
+                        "pre",
+                        "code",
+                    ],
+                },
+            };
+        </script>
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"
+        ></script>
+    </body>
 </html>

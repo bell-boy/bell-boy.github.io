@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ '/assets/css/main.css' }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <title>{{ site.title }}</title>
 </head>
 <body class="home">
@@ -22,11 +22,10 @@
     </div>
    </p>
 
-   <h2>featured</h2>
-
-    <h2>writing</h2>
+   <h2>featured writing</h2>
+    {% assign featured_posts = site.posts | where: "featured", true | sort: "featured_order" %}
     <div style="display: flex; flex-direction: column; gap: 0.5em;">
-      {% for post in site.posts %}
+      {% for post in featured_posts %}
       <div class="post-card" onclick="window.open('{{ post.url }}','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div>
           <h3>{{ post.title }}</h3>
@@ -42,6 +41,29 @@
           <img src="{{ post.image }}" alt="{{ post.title }}" style="width: 100px; height: 100px;" />
         {% endif %}
       </div>
+      {% endfor %}
+    </div>
+
+    <h2>more writing</h2>
+    <div style="display: flex; flex-direction: column; gap: 0.5em;">
+      {% for post in site.posts %}
+      {% unless post.featured %}
+      <div class="post-card" onclick="window.open('{{ post.url }}','_blank','noopener')" style="text-decoration: none; color: inherit; cursor: pointer;">
+        <div>
+          <h3>{{ post.title }}</h3>
+          {% assign words = post.content | strip_html | split: ' ' | size %}
+          {% assign minutes = words | plus: 199 | divided_by: 200 %}
+          {% if minutes < 1 %}
+            {% assign minutes = 1 %}
+          {% endif %}
+          <p class="post-meta">{{ post.date | date: "%B %-d, %Y" }} · {{ minutes }} min read</p>
+          <div class="post-excerpt">{{ post.excerpt }}</div>
+        </div>
+        {% if post.image %}
+          <img src="{{ post.image }}" alt="{{ post.title }}" style="width: 100px; height: 100px;" />
+        {% endif %}
+      </div>
+      {% endunless %}
       {% endfor %}
     </div>
   </div>
