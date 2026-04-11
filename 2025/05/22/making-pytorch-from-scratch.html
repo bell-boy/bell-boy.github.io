@@ -1,34 +1,36 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/assets/css/posts.css" />
-    <link rel="stylesheet" href="/assets/css/main.css" />
-    <link rel="stylesheet" href="/assets/css/code-style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
-      rel="stylesheet"
-    />
-    <title>making pytorch from scratch in c++</title>
-  </head>
-  <body class="post">
-    <div class="main">
-      <header class="post-header">
-        <h1>making pytorch from scratch in c++</h1>
-        <div class="post-meta-row">
-          <p class="post-meta">
-            <em>
-              05.22.2025    · 19 minute read
-            </em>
-          </p>
-          <a class="post-home-link" href="https://bell-boy.github.io">return home</a>
-        </div>
-      </header>
-      <hr />
-      <p><em>tl;dr: I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and can run a 135 Million paramter LLM on my M2 MacBook Air. The code is open source and available on <a href="https://github.com/bell-boy/deeptiny/tree/main">GitHub</a>. I go into the details of how I built it, why I made certain design choices, and what I learned from the process.</em></p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="/assets/css/posts.css" />
+        <link rel="stylesheet" href="/assets/css/main.css" />
+        <link rel="stylesheet" href="/assets/css/code-style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <title>making pytorch from scratch in c++</title>
+    </head>
+    <body class="post">
+        <div class="main">
+            <header class="post-header">
+                <h1>making pytorch from scratch in c++</h1>
+                <div class="post-meta-row">
+                    <p class="post-meta">
+                        <em>
+                            05.22.2025    · 19 minute read
+                        </em>
+                    </p>
+                    <a class="post-home-link" href="https://bell-boy.github.io"
+                        >return home</a
+                    >
+                </div>
+            </header>
+            <hr />
+            <p><em>tl;dr: I built a simple version of PyTorch from scratch in C++. It supports most standard tensor operations, automatic differentiation, and can run a 135 Million paramter LLM on my M2 MacBook Air. The code is open source and available on <a href="https://github.com/bell-boy/deeptiny/tree/main">GitHub</a>. I go into the details of how I built it, why I made certain design choices, and what I learned from the process.</em></p>
 
 <p>I’ve wanted to create a project like this for a while now, and when we were told that we would have freedom to build anything computer architecture related for our final project, I knew it was time.</p>
 
@@ -494,19 +496,35 @@ It’s exhilarating!</p>
 
 <p>Thank you for reading!</p>
 
-    </div>
-    <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']],
-          processEscapes: true
-        },
-        options: {
-          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-        }
-      };
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
-  </body>
+        </div>
+        <script>
+            window.MathJax = {
+                tex: {
+                    inlineMath: [
+                        ["$", "$"],
+                        ["\\(", "\\)"],
+                    ],
+                    displayMath: [
+                        ["$$", "$$"],
+                        ["\\[", "\\]"],
+                    ],
+                    processEscapes: true,
+                },
+                options: {
+                    skipHtmlTags: [
+                        "script",
+                        "noscript",
+                        "style",
+                        "textarea",
+                        "pre",
+                        "code",
+                    ],
+                },
+            };
+        </script>
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"
+        ></script>
+    </body>
 </html>

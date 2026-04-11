@@ -1,34 +1,36 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/assets/css/posts.css" />
-    <link rel="stylesheet" href="/assets/css/main.css" />
-    <link rel="stylesheet" href="/assets/css/code-style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
-      rel="stylesheet"
-    />
-    <title>implementing elastic weight consolidation</title>
-  </head>
-  <body class="post">
-    <div class="main">
-      <header class="post-header">
-        <h1>implementing elastic weight consolidation</h1>
-        <div class="post-meta-row">
-          <p class="post-meta">
-            <em>
-              07.03.2024    · 12 minute read
-            </em>
-          </p>
-          <a class="post-home-link" href="https://bell-boy.github.io">return home</a>
-        </div>
-      </header>
-      <hr />
-      <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="/assets/css/posts.css" />
+        <link rel="stylesheet" href="/assets/css/main.css" />
+        <link rel="stylesheet" href="/assets/css/code-style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <title>implementing elastic weight consolidation</title>
+    </head>
+    <body class="post">
+        <div class="main">
+            <header class="post-header">
+                <h1>implementing elastic weight consolidation</h1>
+                <div class="post-meta-row">
+                    <p class="post-meta">
+                        <em>
+                            07.03.2024    · 12 minute read
+                        </em>
+                    </p>
+                    <a class="post-home-link" href="https://bell-boy.github.io"
+                        >return home</a
+                    >
+                </div>
+            </header>
+            <hr />
+            <p>A while ago I replicated the algorithm described by the paper <a href="https://arxiv.org/abs/1612.00796">Overcoming catastrophic forgetting in neural networks</a>. I implemented everything in PyTorch in a <a href="https://colab.research.google.com/drive/1zd3JedQI8M5lHDJquk-cNnPorNdai3_w?usp=sharing">colab notebook</a>.</p>
 
 <p>The goal of Elastic Weight Consolidation (the main method described in the paper) is to counteract catastrophic fogetting, a phenomena where nerual networks trained on multiple seperate tasks sequentially rapidly forget how to perform old tasks.</p>
 
@@ -197,19 +199,35 @@ Networks</a> and uses the 2nd order taylor expansion to approximate \(  \mathcal
   </ol>
 </div>
 
-    </div>
-    <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']],
-          processEscapes: true
-        },
-        options: {
-          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-        }
-      };
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"></script>
-  </body>
+        </div>
+        <script>
+            window.MathJax = {
+                tex: {
+                    inlineMath: [
+                        ["$", "$"],
+                        ["\\(", "\\)"],
+                    ],
+                    displayMath: [
+                        ["$$", "$$"],
+                        ["\\[", "\\]"],
+                    ],
+                    processEscapes: true,
+                },
+                options: {
+                    skipHtmlTags: [
+                        "script",
+                        "noscript",
+                        "style",
+                        "textarea",
+                        "pre",
+                        "code",
+                    ],
+                },
+            };
+        </script>
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"
+        ></script>
+    </body>
 </html>

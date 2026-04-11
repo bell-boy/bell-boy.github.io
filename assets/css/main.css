@@ -1,61 +1,82 @@
 body {
-  font-family: "IBM Plex Sans", serif;
+    font-family: "IBM Plex Sans", sans-serif;
 }
 
 body {
-  padding-left: 20vw;
-  padding-right: 20vw;
+    padding-left: 20vw;
+    padding-right: 20vw;
+}
+
+body.home,
+body.post {
+    padding-left: 10vw;
+    padding-right: 29vw;
 }
 
 @media (max-width: 640px) {
-  body {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
+    body {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 a {
-  border-bottom: 1px dotted rgba(34, 34, 34, 0.69);
-  color: #000000;
-  text-decoration: none;
-  transition: color 150ms ease;
+    border-bottom: 1px dotted rgba(34, 34, 34, 0.69);
+    color: #000000;
+    text-decoration: none;
+    transition: color 150ms ease;
 }
 
 a:hover {
-  color: #ffc300;
+    color: #ffc300;
 }
 
-h1 {
-  color: #ffc300;
+h1,
+h2 {
+    color: #ffc300;
 }
 
+h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  color: #ffc300;
+    font-family: "Libre Baskerville", serif;
+}
+
+h3,
+h4,
+h5,
+h6 {
+    color: #444;
 }
 
 .home h2 {
-  letter-spacing: 0.03em;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.65em;
 }
 
 .post-meta {
-  color: #999;
-  margin-top: 0.2em;
-  margin-bottom: 0.6em;
+    color: #999;
+    margin-top: 0.2em;
+    margin-bottom: 0.6em;
 }
 
 .post-excerpt {
-  color: #777;
+    color: #777;
+    margin: 0;
 }
 
-.post-card:hover {
-  background-color: #f2f2f2;
+.post-card:hover h3 {
+    color: #ffc300;
 }
 
 .post-card {
-  padding: 0.6em 1.2em;
-  transition: background-color 150ms ease;
+    padding: 0.6em 1.2em;
+}
+
+.post-card h3 {
+    color: #444;
+    transition: color 150ms ease;
 }
