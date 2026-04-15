@@ -12,16 +12,16 @@
             href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
             rel="stylesheet"
         />
-        <title>fourier neural operators vs u-nets: a comparison [wip]</title>
+        <title>fourier neural operators vs unets: a comparison [wip]</title>
     </head>
     <body class="post">
         <div class="main">
             <header class="post-header">
-                <h1>fourier neural operators vs u-nets: a comparison [wip]</h1>
+                <h1>fourier neural operators vs unets: a comparison [wip]</h1>
                 <div class="post-meta-row">
                     <p class="post-meta">
                         <em>
-                            04.03.2026    · 7 minute read
+                            04.03.2026    · 9 minute read
                         </em>
                     </p>
                     <a class="post-home-link" href="https://bell-boy.github.io"
@@ -34,15 +34,15 @@
 
 <h1 id="introduction">introduction</h1>
 
-<p>U-Nets are a class of neural networks that are widely used for <em>image to image</em> tasks, tasks where the input is an image and the output is also an image. 
+<p>UNets are a class of neural networks that are widely used for <em>image to image</em> tasks, tasks where the input is an image and the output is also an image. 
 A great example of an image to image task is <em>semantic segmentation</em>. 
 Given an image $I \in \mathbb{R}^{H \times W \times C}$, the goal of semantic segmentation is to assign a class label to each pixel in the image, resulting in an output image $O \in \mathbb{R}^{H \times W}$ where each pixel value corresponds to a class label.</p>
 
 <p><img src="/assets/images/fno-unet/semantic-seg.png" alt="semantic segmentation" /></p>
 
-<p>Even with the rise of transformer-based architectures, U-Nets still remain a popular choice for image to image tasks, and have been used in a wide range of applications, from medical image analysis to satellite imagery.</p>
+<p>Even with the rise of transformer-based architectures, UNets still remain a popular choice for image to image tasks, and have been used in a wide range of applications, from medical image analysis to satellite imagery.</p>
 
-<p>U-Nets acheive their success by using a unique architecture that consists of an encoder and a decoder.
+<p>UNets acheive their success by using a unique architecture that consists of an encoder and a decoder.
 Leveraging the inductive bias of convolutional layers, the encoder captures local features and patterns in the input image, while the decoder reconstructs the output image from these features.
 The architecture also includes skip connections that allow the network to retain high-resolution information from the encoder, which is crucial for tasks like semantic segmentation where fine details are important.</p>
 
@@ -54,48 +54,19 @@ Given an input function $f: \mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out}}$, the g
 This is particularly useful in applications such as solving partial differential equations (PDEs), where the input and output are functions that describe physical phenomena.
 For example, in fluid dynamics, the input function could represent the initial conditions of a fluid flow, and the output function could represent the velocity field at a later time.</p>
 
-<!--[example image]-->
+<p><img src="/assets/images/fno-unet/vorticity.png" alt="semantic segmentation" /></p>
 
-<p>The issue is that functions are <em>infinite-dimensional</em> objects, which makes it difficult to apply traditional neural network architectures that are designed for finite-dimensional inputs and outputs.
-FNOs get around this issue by leveraging the Fourier transform to represent functions in the <em>frequency domain</em>, which allows them to operate on infinite-dimensional function spaces regardless of the discretization used for the input and output functions.</p>
+<p>The issue is that functions are <em>infinite-dimensional</em> objects, which makes it difficult to apply traditional neural network architectures that are designed for finite-dimensional inputs and outputs.</p>
 
-<p>Mathematically, an FNO layer looks like this: \[v_{t + 1}(x) = \sigma(Wv_t(x)  + (\mathcal{F}_{w_t}v_t)(x))\]</p>
+<p>As we’ll see later, FNOs get around this issue by leveraging the Fourier transform to represent functions in the <em>frequency domain</em>, allowing them to operate on infinite-dimensional function spaces regardless of the discretization used.</p>
 
-<p>Where $v_t$ is the input function at layer $t$, $W$ is a learnable weight matrix, $\sigma$ is a non-linear activation function, and $\mathcal{F}_{w_t}$ is a parameterized convolution.</p>
-
-<p>This works because we can do convolution in the frequency domain <em>very</em> easily, and the Fourier transform allows us to represent functions in a way that is independent of the discretization used for the input and output functions.</p>
-
-<p>In theory, this means that FNOs should be invariant to the resolution of the input and output functions, which is a desirable property for many applications.
-The transform to fourier space also allows FNOs to cheaply capture long-range dependencies in the input function, which can be difficult for traditional convolutional neural networks to capture without using very large kernels or deep architectures.</p>
-
-<p><img src="/assets/images/fno-unet/filters.png" alt="filters" /></p>
-
-<p>Things get interesting when we realize that images can be thought of as functions that map pixel coordinates to pixel values, which means that FNOs can be applied to image to image tasks as well.</p>
+<p>Things get interesting when we realize that images can be thought of as functions that map pixel coordinates in $\mathbb{R}^2$ to to color values in $\mathbb{R}^3$, which means that FNOs can be applied to image to image tasks as well.</p>
 
 <p>This raises the question: how do FNOs compare to U-Nets on image to image tasks like semantic segmentation?</p>
 
-<p>In this post, I try to explore this question by comparing FNO and U-Net performance on the <a href="https://huggingface.co/datasets/tanganke/cityscapes">Cityscapes</a> segmentation dataset. We’ll go through the dataset, the model achitectures, and a couple experiements to see how the two models perform on this task. I’ve written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.</p>
+<p>In this post, I try to explore this question by comparing FNO and U-Net performance on the <a href="https://huggingface.co/datasets/tanganke/cityscapes">Cityscapes</a> semantic segmentation dataset. We’ll go over FNOs, the dataset we’re using, and run a small experiement to see how the two models perform on this task. I’ve written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.</p>
 
-<p>You can recreate the experiments in this post by following along with the accompanying <a href="https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing">notebook</a>.</p>
-
-<h1 id="dataset">dataset</h1>
-
-<p>We’ll specifically be working with the 8-class version of the Cityscapes dataset, which includes the following classes:</p>
-<ul>
-  <li>Flat: Essentially the ground, including roads, sidewalks, and parking lots.</li>
-  <li>Construction: Slightly misleading name, any man-made structure that doesn’t fit into the other categories, such as buildings,
-bridges, fences, tunnels, etc.</li>
-  <li>Nature: Vegitation and grassy areas not mant to be driven on.</li>
-  <li>Vehicle: Cars, trucks, buses, motorcycles, bicycles, etc.</li>
-  <li>Sky: Open sky.</li>
-  <li>Object: Traffic signs, traffic lights, and poles.</li>
-  <li>Human: People, including pedestrians and cyclists.</li>
-  <li>Void: This class is used for pixels that do not belong to any of the other classes, such as the background or areas and objects that are not relevant to the task.</li>
-</ul>
-
-<p>The goal is to take a $128 \times 256$ image from the dataset and predict a $128 \times 256$ segmentation mask, where each pixel in the mask corresponds to one of the 8 classes.</p>
-
-<p>[interactive example]</p>
+<p>You can recreate the experiment in this post by following along with the accompanying <a href="https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing">notebook</a>.</p>
 
 <h1 id="fnos">FNOs</h1>
 
@@ -118,15 +89,15 @@ The output of the layer is the sum of a linear transformation of the input funct
 <p>In modern deep learning, we typically use discrete convolutions<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup>, which are defined as:
 \[(f * g)[n] = \sum_{m} f[m]g[n-m]\]</p>
 
-<p>Discrete convolution has many desirable properties, such as translation invariance and the ability to capture local patterns in the input function, 
+<p>Discrete convolution has many desirable properties, such as translation eqivariance and the ability to capture local patterns in the input function, 
 but it’s not invariant to the resolution of the input and output functions. Additionally, it can be computationally expensive to capture long-range dependencies in the input function using discrete convolution, as it requires using large kernels or deep architectures.</p>
 
 <p>To get around these issues, let’s first start by noting that all functions<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup>
-can be represented a discrete weighted sum of sinusoids oscillating at different frequencies, which is the basis of the Fourier transform.
+can be represented a discrete weighted sum of sinusoids oscillating at different frequencies, which is the basis of the Fourier transform<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote" rel="footnote">3</a></sup>.
 This representation is known as the frequency domain representation of the function, and it allows us to represent functions in a way that is independent of the discretization used for the input and output functions. 
 It additionally has the nice property that convolution in the spatial domain corresponds to pointwise multiplication in the frequency domain, which allows us to perform convolution efficiently.</p>
 
-<p>We’ll define our weights $w_t$ to be the parameterization of some function in the freqeuncy domain, so the convolution operation $(\mathcal{F}_{w_t}v_t)(x)$ can be computed as follows:</p>
+<p>We’ll define our weights $w_t$ to be the parameterization of some function in the freqeuncy domain, so the convolution operation $(\mathcal{F}_{w_t}v_t)(x) = \int v_t(x)w_t(x - y)dy$ can be computed as follows<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup>:</p>
 <ol>
   <li>Take the Fourier transform of the input function $v_t$ to get its representation in the frequency domain.</li>
   <li>Multiply the Fourier coefficients of $v_t$ with the Fourier coefficients of $w_t$.</li>
@@ -137,6 +108,68 @@ It additionally has the nice property that convolution in the spatial domain cor
 
 <p>The trade off is that each layer looses the ability to independantly capture high-frequency information in the input function, which can be important for tasks like semantic segmentation where fine details are important.</p>
 
+<p><img src="/assets/images/fno-unet/filters.png" alt="filters" /></p>
+
+<h1 id="dataset">dataset</h1>
+
+<p>We’ll specifically be working with the 8-class version of the Cityscapes dataset, which includes the following classes:</p>
+<ul>
+  <li>Flat: Essentially the ground, including roads, sidewalks, and parking lots.</li>
+  <li>Construction: Slightly misleading name, any man-made structure that doesn’t fit into the other categories, such as buildings,
+bridges, fences, tunnels, etc.</li>
+  <li>Nature: Vegitation and grassy areas not mant to be driven on.</li>
+  <li>Vehicle: Cars, trucks, buses, motorcycles, bicycles, etc.</li>
+  <li>Sky: Open sky.</li>
+  <li>Object: Traffic signs, traffic lights, and poles.</li>
+  <li>Human: People, including pedestrians and cyclists.</li>
+  <li>Void: This class is used for pixels that do not belong to any of the other classes, such as the background or areas and objects that are not relevant to the task.</li>
+</ul>
+
+<p>The goal is to take a $128 \times 256$ image from the dataset and predict a $128 \times 256$ segmentation mask, where each pixel in the mask corresponds to one of the 8 classes.</p>
+
+<p><img src="/assets/images/fno-unet/segmentation_example.png" alt="segmentation-example" /></p>
+
+<p>During training, I apply extensive augmentations (flips, shears, rotations, translations, etc) to the data to improve generalization performance.</p>
+
+<h1 id="empirical-comparison">empirical comparison</h1>
+
+<p>The original plan for the comparison was to train both models on the dataset for 10 minutes and compare their performance, but this ignores a crucial bias towards the UNet – decades of research and engineering that’ve gone into optimizing the forward and backward passes of convolutional neural networks.</p>
+
+<p>FNOs on the other hand aren’t just unoptimized, but are acutally <em>handicapped</em> by their use of complex weights. Modern GPUs have Tensor Cores which dramatically speed up matrix multiplications, but only for real valued matricies. The FNOs can’t take advantage of that.</p>
+
+<p>The result is that a UNet can be much larger than an FNO and still take more steps in 10 minutes.</p>
+
+<p>So new plan: We’ll train both models for 28 epochs and compare their performance.</p>
+
+<p>I’ve hand tuned the hyperparameters for each model. Ideally I would’ve done a more systematic hyperparameter search, but I only had so much time (and gpu credits!) for this project :p.</p>
+
+<p>I spent <em>much</em> more time tuning the parameters for the FNO than I did for the UNet.</p>
+
+<p>I had trained an FNO first and spent an afternoon tuning it to improve performance until I’d hit a validation accuracy of about 55%, and then the very first UNet I trained after that brutally mogged it, getting to 62% after the first 100 steps and finishing at ~82% in 10 minutes.</p>
+
+<p>This was the last time I changed the UNet hyperparamters.</p>
+
+<p>After a long weekend, I had tuned the FNO to the point where it could get ~67% in 35 minutes. 
+Changes included:</p>
+<ol>
+  <li>Dramatically reducing the number of fourier modes per layer, FNOs can compose frequencies to produce higher frequency filters.</li>
+  <li>Dramatically increasing hidden dimension size. Causes huge increases in computational cost, but also causes huge corresponding gains in performance.</li>
+  <li>Slightly changing the architecture: Instead of adding the convolution output to the previous state then performing a ReLU followed by a BatchNorm, I perform the ReLU on the convolution output followed by addition to the previous state and a BatchNorm. This was motivated by noticing that the original form probably had a harder time expressing the identity.</li>
+</ol>
+
+<p><img src="/assets/images/fno-unet/fno-vs-unet-metrics.png" alt="metrics" />
+<img src="/assets/images/fno-unet/fno-vs-unet-sample.png" alt="example" /></p>
+
+<p>There is much more to do! The next step for really comparing performance is using <a href="https://github.com/pytorch/pytorch/issues/125718">nightly torch code to squeeze out extra performance on complex ops</a> and trying out more architectural tweaks, but that’s outside the scope of this post.</p>
+
+<p>I think this is moderate evidence that for normal image to image tasks in Computer Vision, a UNet will probably outperfrom an FNO for a fixed amount of data or compute.</p>
+
+<h1 id="why-does-unet-mog-so-hard">why does UNet mog so hard?</h1>
+
+<p>uh idk yet check back in a bit</p>
+
+<hr />
+
 <div class="footnotes" role="doc-endnotes">
   <ol>
     <li id="fn:1" role="doc-endnote">
@@ -144,6 +177,12 @@ It additionally has the nice property that convolution in the spatial domain cor
     </li>
     <li id="fn:2" role="doc-endnote">
       <p>More precisely, if we assume that the function is periodic and satisfies certain regularity conditions, then it can be represented as a discrete weighted sum of sinusoids. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>Here’s a <a href="">link</a> to learn more, also check out this cool <a href="">3b1b video</a> for a visual introduction <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>This is a bit of a simplification; the function $w_t$ doesn’t map to the same space as $v_t$, it maps to the space of square matricies operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original <a href="">paper</a> for more details. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
   </ol>
 </div>
