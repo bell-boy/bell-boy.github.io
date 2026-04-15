@@ -10,9 +10,11 @@ _tl;dr: Fourier Neural Operators (FNOs) and U-Nets are two classes of Image to I
 
 # introduction
 
+_many thanks to brooks bryant and aditya madhan for reading over earlier versions of this article_
+
 UNets are a class of neural networks that are widely used for _image to image_ tasks, tasks where the input is an image and the output is also an image. 
 A great example of an image to image task is _semantic segmentation_. 
-Given an image $I \in \mathbb{R}^{H \times W \times C}$, the goal of semantic segmentation is to assign a class label to each pixel in the image, resulting in an output image $O \in \mathbb{R}^{H \times W}$ where each pixel value corresponds to a class label.
+Given an image $I \in \mathbb{R}^{H \times W \times C}$, the goal of semantic segmentation is to assign a class label to each pixel in the image, resulting in an output image $O \in \mathbb{Z}^{H \times W}$ where each pixel value corresponds to a class label.
 
 ![semantic segmentation]({{ site.baseurl }}/assets/images/fno-unet/semantic-seg.png)
 
@@ -25,16 +27,21 @@ The architecture also includes skip connections that allow the network to retain
 ![unet architecture]({{ site.baseurl }}/assets/images/fno-unet/u-net-architecture.png)
 
 Fourier Neural Operators (FNOs) are a newer class of neural networks that have been gaining attention in the field of scientific machine learning.
-Instead of operating on images, FNOs map functions to functions. 
-Given an input function $f: \mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out}}$, the goal of an FNO is to learn a mapping from the input function to the output function $g: \mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out'}}$.
+
+They are _operators_, which is the fancy mathematical way of indicating that FNOs are a special type of function. They don't operate on vectors like normal neural networks. Instead, they operate on _functions_.
+
+The training dataset of an FNO consists of pairs of _functions_ $(f(\mathbf{x}), g(\mathbf{x}))$. An FNO is an operator that maps the input function $f: \mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out}}$ to the output function $g: \mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out'}}$.
+
+In other words, The FNO $\mathcal{M}$ is trained so that for every $f$ in the dataset, $(\mathcal{M}f)(\mathbf{x})$ is a close to $g(\mathbf{x})$ as possible.
+
 This is particularly useful in applications such as solving partial differential equations (PDEs), where the input and output are functions that describe physical phenomena.
-For example, in fluid dynamics, the input function could represent the initial conditions of a fluid flow, and the output function could represent the velocity field at a later time.
+For example, in fluid dynamics the input function could represent the initial conditions of a fluid flow, mapping $(x, y)$ cordinates to a scaler vorticity, while the output function could represent the velocity field at a later time.
 
 ![semantic segmentation]({{ site.baseurl }}/assets/images/fno-unet/vorticity.png)
 
-The issue is that functions are _infinite-dimensional_ objects, which makes it difficult to apply traditional neural network architectures that are designed for finite-dimensional inputs and outputs.
+The issue is that functions are typically represented in an _infinite-dimensional_ basis, which makes it difficult to apply traditional neural network architectures that are designed for finite-dimensional inputs and outputs.
 
-As we'll see later, FNOs get around this issue by leveraging the Fourier transform to represent functions in the _frequency domain_, allowing them to operate on infinite-dimensional function spaces regardless of the discretization used.
+As we'll see later, FNOs get around this issue by leveraging the Fourier transform to represent functions in the _frequency domain_, a finite-dimensional basis that (given certain conditions are met) can fully represent almost any function.
 
 Things get interesting when we realize that images can be thought of as functions that map pixel coordinates in $\mathbb{R}^2$ to to color values in $\mathbb{R}^3$, which means that FNOs can be applied to image to image tasks as well.
 
@@ -46,18 +53,20 @@ You can recreate the experiment in this post by following along with the accompa
 
 # FNOs
 
-As mentioned, a single FNO layer takes the form: 
+The _output_ of an FNO layer takes the form
 
-\\[v_{t + 1}(x) = \sigma(Wv_t(x)  + (\mathcal{F}_{w_t}v_t)(x))\\]
+\\[v_{t + 1}(x) = \sigma(W_tv_t(x)  + (\mathcal{F}_{w_t}v_t)(x))\\]
 
-At first glance, this equation may appear unfriendly, but it's really a combination of two classic deep learning ideas
+It's important to realize that $v_{t + 1}$ is not the hidden layer, it is the _output_ of the  hidden layer. FNOs operate directly on functions and their _hidden states_ are also functions.
 
-The outer part of the equation is simply a _residual network_. 
-The output of the layer is the sum of a linear transformation of the input function $Wv_t(x)$ and a non-linear transformation of the input function $(\mathcal{F}_{w_t}v_t)(x)$, followed by a non-linear activation function $\sigma$.
+$v_{t + 1}$ maps from the original input function $f$'s input space $\mathbb{R}^{in}$ to an intermediate output space $\mathbb{R}^{hidden}$.
+This means that $v_{t + 1}(x)$ is just a vector in $\mathbb{R}^{hidden}$
 
-This is a common architecture in deep learning, and is known to be effective for training deep networks.
+So the above equation is telling you that given both an input to the original function $x$, the previous function $v_t$, and the weights of the current layer $W_t$ and $w_t$, this is how you compute the output $v_{t + 1}(x)$ in the hidden space. 
 
-I mentioned earlier that $\mathcal{F}_{w_t}$ is a parameterized convolution in the frequency domain, but what does that actually mean?
+Now let's break the equation down.
+
+$\mathcal{F}_{w_t}$ is the heart of the FNO, a parameterized convolution in the frequency domain, but what does that actually mean?
 
 Given two functions $f$ and $g$, their convolution is defined as:
 \\[(f * g)(x) = \int f(y)g(x-y)dy\\]
@@ -69,20 +78,26 @@ Discrete convolution has many desirable properties, such as translation eqivaria
 but it's not invariant to the resolution of the input and output functions. Additionally, it can be computationally expensive to capture long-range dependencies in the input function using discrete convolution, as it requires using large kernels or deep architectures.
 
 To get around these issues, let's first start by noting that all functions[^2]
-can be represented a discrete weighted sum of sinusoids oscillating at different frequencies, which is the basis of the Fourier transform[^3].
+can be represented a finite weighted sum of sinusoids oscillating at different frequencies, which is the basis of the Fourier transform[^3].
+
 This representation is known as the frequency domain representation of the function, and it allows us to represent functions in a way that is independent of the discretization used for the input and output functions. 
 It additionally has the nice property that convolution in the spatial domain corresponds to pointwise multiplication in the frequency domain, which allows us to perform convolution efficiently.
 
-We'll define our weights $w_t$ to be the parameterization of some function in the freqeuncy domain, so the convolution operation $(\mathcal{F}_{w_t}v_t)(x) = \int v_t(x)w_t(x - y)dy$ can be computed as follows[^4]:
+We'll define our weights $w_t$ to be the frequency domian parameterization of some function. So $w_t : R^{in} \rightarrow R^{hidden}$ is stored as the coeffecients of the sinusoids. We can define $(\mathcal{F}_{w_t}v_t)(x) = \int v_t(x)w_t(x - y)dy$ and compute it as follows[^4]:
 1. Take the Fourier transform of the input function $v_t$ to get its representation in the frequency domain.
 2. Multiply the Fourier coefficients of $v_t$ with the Fourier coefficients of $w_t$.
 3. Take the inverse Fourier transform of the result to get the output function in the spatial domain.
 
 For efficiency reasons, we keep only the lowest $k$ Fourier modes, which allows us to capture long-range dependencies in the input function without using large kernels or deep architectures.
 
-The trade off is that each layer looses the ability to independantly capture high-frequency information in the input function, which can be important for tasks like semantic segmentation where fine details are important.
+The trade off is that each layer loses the ability to independantly capture high-frequency information in the input function, which can be important for tasks like semantic segmentation where fine details are important.
 
 ![filters]({{ site.baseurl }}/assets/images/fno-unet/filters.png)
+
+
+The outer part of the equation is a _residual connection_ commonly used in neural networks. 
+
+$\sigma: \mathbb{R}^{hidden} \rightarrow \mathbb{R}^{hidden}$ is a non-linearity and $W: R^{hidden \times hidden}$ is a matrix that operates on hidden vectors. We add the linearly transformed output of the previous layer to the output of the FNO. For FNOs this also has the added benefit of preserving higher freqeuncy components that would've been removed by the convolution layer.
 
 # dataset
 
