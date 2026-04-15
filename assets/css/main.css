@@ -18,6 +18,12 @@ body.post {
         padding-left: 1rem;
         padding-right: 1rem;
     }
+
+    body.home,
+    body.post {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 a {
