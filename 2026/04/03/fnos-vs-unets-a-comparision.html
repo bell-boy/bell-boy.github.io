@@ -12,16 +12,16 @@
             href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
             rel="stylesheet"
         />
-        <title>fourier neural operators vs unets: a comparison [wip]</title>
+        <title>fourier neural operators vs unets: a comparison</title>
     </head>
     <body class="post">
         <div class="main">
             <header class="post-header">
-                <h1>fourier neural operators vs unets: a comparison [wip]</h1>
+                <h1>fourier neural operators vs unets: a comparison</h1>
                 <div class="post-meta-row">
                     <p class="post-meta">
                         <em>
-                            04.03.2026    · 11 minute read
+                            04.03.2026    · 15 minute read
                         </em>
                     </p>
                     <a class="post-home-link" href="https://bell-boy.github.io"
@@ -44,7 +44,7 @@ Given an image $I \in \mathbb{R}^{H \times W \times C}$, the goal of semantic se
 
 <p>Even with the rise of transformer-based architectures, UNets still remain a popular choice for image to image tasks, and have been used in a wide range of applications, from medical image analysis to satellite imagery.</p>
 
-<p>UNets acheive their success by using a unique architecture that consists of an encoder and a decoder.
+<p>UNets achieve their success by using a unique architecture that consists of an encoder and a decoder.
 Leveraging the inductive bias of convolutional layers, the encoder captures local features and patterns in the input image, while the decoder reconstructs the output image from these features.
 The architecture also includes skip connections that allow the network to retain high-resolution information from the encoder, which is crucial for tasks like semantic segmentation where fine details are important.</p>
 
@@ -59,7 +59,7 @@ The architecture also includes skip connections that allow the network to retain
 <p>In other words, The FNO $\mathcal{M}$ is trained so that for every $f$ in the dataset, $(\mathcal{M}f)(\mathbf{x})$ is a close to $g(\mathbf{x})$ as possible.</p>
 
 <p>This is particularly useful in applications such as solving partial differential equations (PDEs), where the input and output are functions that describe physical phenomena.
-For example, in fluid dynamics the input function could represent the initial conditions of a fluid flow, mapping $(x, y)$ cordinates to a scaler vorticity, while the output function could represent the velocity field at a later time.</p>
+For example, in fluid dynamics the input function could represent the initial conditions of a fluid flow, mapping $(x, y)$ coordinates to a scalar vorticity, while the output function could represent the velocity field at a later time.</p>
 
 <p><img src="/assets/images/fno-unet/vorticity.png" alt="semantic segmentation" /></p>
 
@@ -71,7 +71,7 @@ For example, in fluid dynamics the input function could represent the initial co
 
 <p>This raises the question: how do FNOs compare to U-Nets on image to image tasks like semantic segmentation?</p>
 
-<p>In this post, I try to explore this question by comparing FNO and U-Net performance on the <a href="https://huggingface.co/datasets/tanganke/cityscapes">Cityscapes</a> semantic segmentation dataset. We’ll go over FNOs, the dataset we’re using, and run some small experiements to compare the two models on this task. I’ve written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.</p>
+<p>In this post, I try to explore this question by comparing FNO and U-Net performance on the <a href="https://huggingface.co/datasets/tanganke/cityscapes">Cityscapes</a> semantic segmentation dataset. We’ll go over FNOs, the dataset we’re using, and run some small experiments to compare the two models on this task. I’ve written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.</p>
 
 <p>You can recreate the experiments in this post by following along with the accompanying <a href="https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing">notebook</a>.</p>
 
@@ -98,7 +98,7 @@ This means that $v_{t + 1}(x)$ is just a vector in $\mathbb{R}^{hidden}$</p>
 <p>In modern deep learning, we typically use discrete convolutions<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup>, which are defined as:
 \[(f * g)[n] = \sum_{m} f[m]g[n-m]\]</p>
 
-<p>Discrete convolution has many desirable properties, such as translation eqivariance and the ability to capture local patterns in the input function, 
+<p>Discrete convolution has many desirable properties, such as translation equivariance and the ability to capture local patterns in the input function, 
 but it’s not invariant to the resolution of the input and output functions. Additionally, it can be computationally expensive to capture long-range dependencies in the input function using discrete convolution, as it requires using large kernels or deep architectures.</p>
 
 <p>To get around these issues, let’s first start by noting that all functions<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup>
@@ -107,7 +107,7 @@ can be represented a finite weighted sum of sinusoids oscillating at different f
 <p>This representation is known as the frequency domain representation of the function, and it allows us to represent functions in a way that is independent of the discretization used for the input and output functions. 
 It additionally has the nice property that convolution in the spatial domain corresponds to pointwise multiplication in the frequency domain, which allows us to perform convolution efficiently.</p>
 
-<p>We’ll define our weights $w_t$ to be the frequency domian parameterization of some function. So $w_t : R^{in} \rightarrow R^{hidden}$ is stored as the coeffecients of the sinusoids. We can define $(\mathcal{F}_{w_t}v_t)(x) = \int v_t(x)w_t(x - y)dy$ and compute it as follows<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup>:</p>
+<p>We’ll define our weights $w_t$ to be the frequency domain parameterization of some function. So $w_t : R^{in} \rightarrow R^{hidden}$ is stored as the coefficients of the sinusoids. We can define $(\mathcal{F}_{w_t}v_t)(x) = \int v_t(x)w_t(x - y)dy$ and compute it as follows<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup>:</p>
 <ol>
   <li>Take the Fourier transform of the input function $v_t$ to get its representation in the frequency domain.</li>
   <li>Multiply the Fourier coefficients of $v_t$ with the Fourier coefficients of $w_t$.</li>
@@ -116,13 +116,13 @@ It additionally has the nice property that convolution in the spatial domain cor
 
 <p>For efficiency reasons, we keep only the lowest $k$ Fourier modes, which allows us to capture long-range dependencies in the input function without using large kernels or deep architectures.</p>
 
-<p>The trade off is that each layer loses the ability to independantly capture high-frequency information in the input function, which can be important for tasks like semantic segmentation where fine details are important.</p>
+<p>The trade off is that each layer loses the ability to independently capture high-frequency information in the input function, which can be important for tasks like semantic segmentation where fine details are important.</p>
 
 <p><img src="/assets/images/fno-unet/filters.png" alt="filters" /></p>
 
 <p>The outer part of the equation is a <em>residual connection</em> commonly used in neural networks.</p>
 
-<p>$\sigma: \mathbb{R}^{hidden} \rightarrow \mathbb{R}^{hidden}$ is a non-linearity and $W: R^{hidden \times hidden}$ is a matrix that operates on hidden vectors. We add the linearly transformed output of the previous layer to the output of the FNO. For FNOs this also has the added benefit of preserving higher freqeuncy components that would’ve been removed by the convolution layer.</p>
+<p>$\sigma: \mathbb{R}^{hidden} \rightarrow \mathbb{R}^{hidden}$ is a non-linearity and $W: R^{hidden \times hidden}$ is a matrix that operates on hidden vectors. We add the linearly transformed output of the previous layer to the output of the FNO. For FNOs this also has the added benefit of preserving higher frequency components that would’ve been removed by the convolution layer.</p>
 
 <h1 id="dataset">dataset</h1>
 
@@ -131,7 +131,7 @@ It additionally has the nice property that convolution in the spatial domain cor
   <li>Flat: Essentially the ground, including roads, sidewalks, and parking lots.</li>
   <li>Construction: Slightly misleading name, any man-made structure that doesn’t fit into the other categories, such as buildings,
 bridges, fences, tunnels, etc.</li>
-  <li>Nature: Vegitation and grassy areas not mant to be driven on.</li>
+  <li>Nature: Vegetation and grassy areas not meant to be driven on.</li>
   <li>Vehicle: Cars, trucks, buses, motorcycles, bicycles, etc.</li>
   <li>Sky: Open sky.</li>
   <li>Object: Traffic signs, traffic lights, and poles.</li>
@@ -149,7 +149,7 @@ bridges, fences, tunnels, etc.</li>
 
 <p>The original plan for the comparison was to train both models on the dataset for 10 minutes and compare their performance, but this ignores a crucial bias towards the UNet – decades of research and engineering that’ve gone into optimizing the forward and backward passes of convolutional neural networks.</p>
 
-<p>FNOs on the other hand aren’t just unoptimized, but are acutally <em>handicapped</em> by their use of complex weights. Modern GPUs have Tensor Cores which dramatically speed up matrix multiplications, but only for real valued matricies. The FNOs can’t take advantage of that.</p>
+<p>FNOs on the other hand aren’t just unoptimized, but are actually <em>handicapped</em> by their use of complex weights. Modern GPUs have Tensor Cores which dramatically speed up matrix multiplications, but only for real valued matrices. The FNOs can’t take advantage of that.</p>
 
 <p>The result is that a UNet can be much larger than an FNO and still take more steps in 10 minutes.</p>
 
@@ -161,12 +161,12 @@ bridges, fences, tunnels, etc.</li>
 
 <p>I had trained an FNO first and spent an afternoon tuning it to improve performance until I’d hit a validation accuracy of about 55%, and then the very first UNet I trained after that brutally mogged it, getting to 62% after the first 100 steps and finishing at ~82% in 10 minutes.</p>
 
-<p>This was the last time I changed the UNet hyperparamters.</p>
+<p>This was the last time I changed the UNet hyperparameters.</p>
 
 <p>After a long weekend, I had tuned the FNO to the point where it could get ~67% in 35 minutes. 
 Changes included:</p>
 <ol>
-  <li>Dramatically reducing the number of fourier modes per layer, FNOs can compose frequencies to produce higher frequency filters.</li>
+  <li>Dramatically reducing the number of Fourier modes per layer, FNOs can compose frequencies to produce higher frequency filters.</li>
   <li>Dramatically increasing hidden dimension size. Causes huge increases in computational cost, but also causes huge corresponding gains in performance.</li>
   <li>Slightly changing the architecture: Instead of adding the convolution output to the previous state then performing a ReLU followed by a BatchNorm, I perform the ReLU on the convolution output followed by addition to the previous state and a BatchNorm. This was motivated by noticing that the original form probably had a harder time expressing the identity.</li>
 </ol>
@@ -176,7 +176,7 @@ Changes included:</p>
 
 <p>There is much more to do! The next step for really comparing performance is using <a href="https://github.com/pytorch/pytorch/issues/125718">nightly torch code to squeeze out extra performance on complex ops</a> and trying out more architectural tweaks, but that’s outside the scope of this post.</p>
 
-<p>I think this is moderate evidence that for normal image to image tasks in Computer Vision, a UNet will probably outperfrom an FNO for a fixed amount of data or compute.</p>
+<p>I think this is moderate evidence that for normal image to image tasks in Computer Vision, a UNet will probably outperform an FNO for a fixed amount of data or compute.</p>
 
 <h1 id="why-does-unet-mog-so-hard">why does unet mog so hard?</h1>
 
@@ -196,13 +196,64 @@ Changes included:</p>
 <p>Hypotheses:</p>
 <ol>
   <li>The issue is depth. The resolution downsampling allows us to train a much deeper model given our limited memory. Downsample and upsample inside of a much deeper FNO and we should be able to close the gap.</li>
-  <li>Depth alone isn’t the problem. The multi-scale architecture allows UNets to learn broad features across the whole image <em>and</em> local features as well. Downsampling alone won’t change anything, spatial convolution is just better.</li>
+  <li>Depth alone isn’t the problem. The multi-scale architecture allows UNets to learn broad features across the whole image <em>and</em> local features as well. Downsampling alone won’t change anything, spatial convolution is just better and UNet gives it the ability to cover it’s weaknesses.</li>
 </ol>
 
-<h2 id="unets-sans-skip">unets sans skip</h2>
+<h2 id="unet-sans-skip">unet sans skip</h2>
 
 <p>To test this, let’s create a new architecture: UNet Sans Skip (USS).
-It’s a UNet, but we don’t copy over the outputs from one side of the U to the other. Information soley flows through the bottleneck dimension at the bottom of the architecture.</p>
+It’s a UNet, but we don’t copy over the outputs from one side of the U to the other. Information solely flows through the bottleneck dimension at the bottom of the architecture.</p>
+
+<p>Similarly to before, we’ll train an FNO, UNet, and USS for 7 epochs with minimal tuning and compare their performance.</p>
+
+<p><img src="/assets/images/fno-unet/unet-sans-skip-curves.png" alt="metrics" />
+<img src="/assets/images/fno-unet/unet-sans-skip-example.png" alt="example" /></p>
+
+<p>Woah! There is a gap between the UNet and the USS, but it’s small! This is pretty surprising to me, I expected the skip connections to be much more important for performance.</p>
+
+<p>More importantly the USS is strongly outperforming the FNO, maybe downsampling and upsampling in a much deeper FNO is enough to close the gap?</p>
+
+<h2 id="fno-pooling">fno pooling</h2>
+
+<p>It’s not obvious that naive downsampling will work for FNOs. 
+The hypothesized reason they work so well for UNets is that they allow the <em>receptive field</em> (i.e. the number of input pixels each filter depends on) of each filter to grow exponentially with depth, which allows the network to learn both local and global features. 
+This receptive field growth is a consequence of the fact that convolutional filters are local, so downsampling via max pooling allows them to capture broader features without needing to be deeper.</p>
+
+<p>Will max pooling have the same effect for FNOs? Or do we need to do something more clever?</p>
+
+<p>To test this, let’s create another new architecture: UFNO!
+It’s almost exactly what it sounds like, but we’ll again omit the skip connections to make sure we’re only testing the effect of downsampling and upsampling.</p>
+
+<p>We’ll test two downsampling strategies:</p>
+<ol>
+  <li>Max downsampling: We can use simple max pooling to downsample the input function. This is the most straightforward way to implement downsampling, but I suspect it may not be the most effective for FNOs.</li>
+  <li>Naive downsampling: We can also just straightforwardly downsample the input function by taking every nth pixel, and upsample by repeating each pixel n times. I expect this to work better by intentionally introducing aliasing, allowing the network to gain access to higher frequency information in the input function that would’ve been lost by the convolution layer.</li>
+</ol>
+
+<p>To upsample, we’ll simply oversample input function by taking the FFT of the input function, appending zeros to the Fourier coefficients to increase the resolution, and then taking the inverse FFT to get back to the spatial domain. This is a common upsampling strategy in signal processing, and it has the nice property that it doesn’t introduce any additional information into the input function, which allows us to isolate the effect of downsampling.</p>
+
+<!--TODO explain aliasing-->
+
+<p>We’ll again train an FNO, USS, a UFNO with naive downsampling, and a UFNO with max pooling for 7 epochs with minimal tuning and compare their performance.</p>
+
+<p><img src="/assets/images/fno-unet/4-model.png" alt="metrics" />
+<img src="/assets/images/fno-unet/4-model-comp.png" alt="example" /></p>
+
+<p>So… that didn’t work! The max pool outperformed the Naive downsampling, but both were pretty bad and underperformed the naive FNO!</p>
+
+<p>So to recap:</p>
+<ol>
+  <li>The UNet outperforms the FNO by a large margin.</li>
+  <li>A Fully Convolutional Network performs similarly to an FNO, which suggests that the issue isn’t the convolution in the frequency domain, but rather the architecture of the UNet itself.</li>
+  <li>A UNet without skip connections still performs much better than an FNO, which suggests that the advantage is gained by the downsampling + depth of the UNet.</li>
+  <li>Adding downsampling and upsampling to the FNO doesn’t improve performance, which suggests that the advantage of the UNet is not just due to the ability to capture features at different scales, but also due to the specific way that it captures those features (i.e. spatial convolution).</li>
+</ol>
+
+<p>Why does spatial convolution compose much better than convolution in the frequency domain? I don’t know! This is a question for another day, but my current hypothesis is that it’s because receptive field growth is a consequence of the locality of convolutional filters, and downsampling allows them to capture broader features without needing to be deeper.</p>
+
+<p>FNOs are not local, so downsampling doesn’t have the same effect on their receptive field, and they don’t get the same benefits from it. Instead, the benefit FNOs should get from downsampling is that it allows them to capture higher frequency information in the input function that would’ve been lost by the convolution layer, but this doesn’t seem to be enough to close the gap.</p>
+
+<p>If you have opinions on this article or feedback on the experiments, please don’t hesitate to tweet at me at <a href="https://x.com/0xf3mi">@0xf3mi</a>! I hope you enjoyed reading this article as much as I enjoyed writing it. Till next time!</p>
 
 <hr />
 
@@ -215,10 +266,10 @@ It’s a UNet, but we don’t copy over the outputs from one side of the U to th
       <p>More precisely, if we assume that the function is periodic and satisfies certain regularity conditions, then it can be represented as a discrete weighted sum of sinusoids. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
     <li id="fn:3" role="doc-endnote">
-      <p>Here’s a <a href="">link</a> to learn more, also check out this cool <a href="https://www.youtube.com/watch?v=spUNpyF58BY">3b1b video</a> for a visual introduction <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+      <p>Here’s a <a href="https://betterexplained.com/articles/an-interactive-guide-to-the-fourier-transform/">link</a> to learn more, also check out this cool <a href="https://www.youtube.com/watch?v=spUNpyF58BY">3b1b video</a> for a visual introduction <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
     <li id="fn:4" role="doc-endnote">
-      <p>This is a bit of a simplification; the function $w_t$ doesn’t map to the same space as $v_t$, it maps to the space of square matricies operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original <a href="https://arxiv.org/pdf/2010.08895">paper</a> for more details. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+      <p>This is a bit of a simplification; the function $w_t$ doesn’t map to the same space as $v_t$, it maps to the space of square matrices operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original <a href="https://arxiv.org/pdf/2010.08895">paper</a> for more details. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
   </ol>
 </div>
