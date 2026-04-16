@@ -21,7 +21,7 @@
                 <div class="post-meta-row">
                     <p class="post-meta">
                         <em>
-                            04.03.2026    · 10 minute read
+                            04.03.2026    · 11 minute read
                         </em>
                     </p>
                     <a class="post-home-link" href="https://bell-boy.github.io"
@@ -34,7 +34,7 @@
 
 <h1 id="introduction">introduction</h1>
 
-<p><em>many thanks to brooks bryant and aditya madhan for reading over earlier versions of this article</em></p>
+<p><em>many thanks to brooks bryant and aditya madhan for reading over earlier versions of this article and giving me ideas for experiments</em></p>
 
 <p>UNets are a class of neural networks that are widely used for <em>image to image</em> tasks, tasks where the input is an image and the output is also an image. 
 A great example of an image to image task is <em>semantic segmentation</em>. 
@@ -71,9 +71,9 @@ For example, in fluid dynamics the input function could represent the initial co
 
 <p>This raises the question: how do FNOs compare to U-Nets on image to image tasks like semantic segmentation?</p>
 
-<p>In this post, I try to explore this question by comparing FNO and U-Net performance on the <a href="https://huggingface.co/datasets/tanganke/cityscapes">Cityscapes</a> semantic segmentation dataset. We’ll go over FNOs, the dataset we’re using, and run a small experiement to see how the two models perform on this task. I’ve written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.</p>
+<p>In this post, I try to explore this question by comparing FNO and U-Net performance on the <a href="https://huggingface.co/datasets/tanganke/cityscapes">Cityscapes</a> semantic segmentation dataset. We’ll go over FNOs, the dataset we’re using, and run some small experiements to compare the two models on this task. I’ve written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.</p>
 
-<p>You can recreate the experiment in this post by following along with the accompanying <a href="https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing">notebook</a>.</p>
+<p>You can recreate the experiments in this post by following along with the accompanying <a href="https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing">notebook</a>.</p>
 
 <h1 id="fnos">FNOs</h1>
 
@@ -178,9 +178,31 @@ Changes included:</p>
 
 <p>I think this is moderate evidence that for normal image to image tasks in Computer Vision, a UNet will probably outperfrom an FNO for a fixed amount of data or compute.</p>
 
-<h1 id="why-does-unet-mog-so-hard">why does UNet mog so hard?</h1>
+<h1 id="why-does-unet-mog-so-hard">why does unet mog so hard?</h1>
 
-<p>uh idk yet check back in a bit</p>
+<p>I don’t know! In this section I do a couple of ablations to try to get to the answer.</p>
+
+<h2 id="are-spatial-convolutions-just-better">are spatial convolutions just better?</h2>
+
+<p>Let’s define a Fully Convolutional Network (FCN), it’s identical to the FNO but with one key difference. We replace $\mathcal{F}_{w_t}$ with a normal CNN convolution.</p>
+
+<p>Below are the results of training both architectures on 14 epochs of the data, with minimal tuning.</p>
+
+<p><img src="/assets/images/fno-unet/fcn.png" alt="metrics" />
+<img src="/assets/images/fno-unet/fcn-img.png" alt="example" /></p>
+
+<p>They perform almost identically! Why?</p>
+
+<p>Hypotheses:</p>
+<ol>
+  <li>The issue is depth. The resolution downsampling allows us to train a much deeper model given our limited memory. Downsample and upsample inside of a much deeper FNO and we should be able to close the gap.</li>
+  <li>Depth alone isn’t the problem. The multi-scale architecture allows UNets to learn broad features across the whole image <em>and</em> local features as well. Downsampling alone won’t change anything, spatial convolution is just better.</li>
+</ol>
+
+<h2 id="unets-sans-skip">unets sans skip</h2>
+
+<p>To test this, let’s create a new architecture: UNet Sans Skip (USS).
+It’s a UNet, but we don’t copy over the outputs from one side of the U to the other. Information soley flows through the bottleneck dimension at the bottom of the architecture.</p>
 
 <hr />
 
@@ -193,10 +215,10 @@ Changes included:</p>
       <p>More precisely, if we assume that the function is periodic and satisfies certain regularity conditions, then it can be represented as a discrete weighted sum of sinusoids. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
     <li id="fn:3" role="doc-endnote">
-      <p>Here’s a <a href="">link</a> to learn more, also check out this cool <a href="">3b1b video</a> for a visual introduction <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+      <p>Here’s a <a href="">link</a> to learn more, also check out this cool <a href="https://www.youtube.com/watch?v=spUNpyF58BY">3b1b video</a> for a visual introduction <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
     <li id="fn:4" role="doc-endnote">
-      <p>This is a bit of a simplification; the function $w_t$ doesn’t map to the same space as $v_t$, it maps to the space of square matricies operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original <a href="">paper</a> for more details. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+      <p>This is a bit of a simplification; the function $w_t$ doesn’t map to the same space as $v_t$, it maps to the space of square matricies operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original <a href="https://arxiv.org/pdf/2010.08895">paper</a> for more details. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
   </ol>
 </div>
