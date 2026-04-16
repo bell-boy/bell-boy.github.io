@@ -10,7 +10,7 @@ _tl;dr: Fourier Neural Operators (FNOs) and U-Nets are two classes of Image to I
 
 # introduction
 
-_many thanks to brooks bryant and aditya madhan for reading over earlier versions of this article_
+_many thanks to brooks bryant and aditya madhan for reading over earlier versions of this article and giving me ideas for experiments_
 
 UNets are a class of neural networks that are widely used for _image to image_ tasks, tasks where the input is an image and the output is also an image. 
 A great example of an image to image task is _semantic segmentation_. 
@@ -47,9 +47,9 @@ Things get interesting when we realize that images can be thought of as function
 
 This raises the question: how do FNOs compare to U-Nets on image to image tasks like semantic segmentation?
 
-In this post, I try to explore this question by comparing FNO and U-Net performance on the [Cityscapes](https://huggingface.co/datasets/tanganke/cityscapes) semantic segmentation dataset. We'll go over FNOs, the dataset we're using, and run a small experiement to see how the two models perform on this task. I've written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.
+In this post, I try to explore this question by comparing FNO and U-Net performance on the [Cityscapes](https://huggingface.co/datasets/tanganke/cityscapes) semantic segmentation dataset. We'll go over FNOs, the dataset we're using, and run some small experiements to compare the two models on this task. I've written this post assuming that the reader has some familiarity with Convolutional Neural Networks and U-Nets, but is new to FNOs.
 
-You can recreate the experiment in this post by following along with the accompanying [notebook](https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing).
+You can recreate the experiments in this post by following along with the accompanying [notebook](https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing).
 
 # FNOs
 
@@ -149,9 +149,31 @@ There is much more to do! The next step for really comparing performance is usin
 
 I think this is moderate evidence that for normal image to image tasks in Computer Vision, a UNet will probably outperfrom an FNO for a fixed amount of data or compute.
 
-# why does UNet mog so hard?
+# why does unet mog so hard?
 
-uh idk yet check back in a bit
+I don't know! In this section I do a couple of ablations to try to get to the answer.
+
+## are spatial convolutions just better?
+
+Let's define a Fully Convolutional Network (FCN), it's identical to the FNO but with one key difference. We replace $\mathcal{F}_{w_t}$ with a normal CNN convolution.
+
+Below are the results of training both architectures on 14 epochs of the data, with minimal tuning.
+
+![metrics]({{ site.baseurl }}/assets/images/fno-unet/fcn.png)
+![example]({{ site.baseurl }}/assets/images/fno-unet/fcn-img.png)
+
+They perform almost identically! Why?
+
+Hypotheses:
+1. The issue is depth. The resolution downsampling allows us to train a much deeper model given our limited memory. Downsample and upsample inside of a much deeper FNO and we should be able to close the gap.
+2. Depth alone isn't the problem. The multi-scale architecture allows UNets to learn broad features across the whole image _and_ local features as well. Downsampling alone won't change anything, spatial convolution is just better.
+
+## unets sans skip
+
+To test this, let's create a new architecture: UNet Sans Skip (USS).
+It's a UNet, but we don't copy over the outputs from one side of the U to the other. Information soley flows through the bottleneck dimension at the bottom of the architecture.
+
+
 
 
 
@@ -160,5 +182,5 @@ uh idk yet check back in a bit
 
 [^1]: Well really deep learning uses cross-correlation, which is defined as: \\[(f \star g)[n] = \sum_{m} f[m]g[n+m]\\] But the two operations are very similar, and the difference is not important for our purposes.
 [^2]: More precisely, if we assume that the function is periodic and satisfies certain regularity conditions, then it can be represented as a discrete weighted sum of sinusoids.
-[^3]: Here's a [link]() to learn more, also check out this cool [3b1b video]() for a visual introduction
-[^4]: This is a bit of a simplification; the function $w_t$ doesn't map to the same space as $v_t$, it maps to the space of square matricies operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original [paper]() for more details.
+[^3]: Here's a [link]() to learn more, also check out this cool [3b1b video](https://www.youtube.com/watch?v=spUNpyF58BY) for a visual introduction
+[^4]: This is a bit of a simplification; the function $w_t$ doesn't map to the same space as $v_t$, it maps to the space of square matricies operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original [paper](https://arxiv.org/pdf/2010.08895) for more details.
