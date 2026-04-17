@@ -18,7 +18,7 @@ Given an image $I \in \mathbb{R}^{H \times W \times C}$, the goal of semantic se
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/semantic-seg.png" alt="semantic segmentation">
-  <figcaption>Placeholder caption describing the semantic segmentation example.</figcaption>
+  <figcaption>adorable example</figcaption>
 </figure>
 
 Even with the rise of transformer-based architectures, UNets still remain a popular choice for image to image tasks, and have been used in a wide range of applications, from medical image analysis to satellite imagery.
@@ -29,7 +29,7 @@ The architecture also includes skip connections that allow the network to retain
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/u-net-architecture.png" alt="unet architecture">
-  <figcaption>Placeholder caption describing the U-Net architecture diagram.</figcaption>
+  <figcaption>The original UNet architecture from <a href="https://arxiv.org/abs/1505.04597">Ronneberger et al.</a></figcaption>
 </figure>
 
 Fourier Neural Operators (FNOs) are a newer class of neural networks that have been gaining attention in the field of scientific machine learning.
@@ -41,11 +41,11 @@ The training dataset of an FNO consists of pairs of _functions_ $(f(\mathbf{x}),
 In other words, The FNO $\mathcal{M}$ is trained so that for every $f$ in the dataset, $(\mathcal{M}f)(\mathbf{x})$ is as close to $g(\mathbf{x})$ as possible.
 
 This is particularly useful in applications such as solving partial differential equations (PDEs), where the input and output are functions that describe physical phenomena.
-For example, in fluid dynamics the input function could represent the initial conditions of a fluid flow, mapping $(x, y)$ coordinates to a scalar vorticity, while the output function could represent the velocity field at a later time.
+For example, in fluid dynamics the input function could represent the initial conditions of a fluid flow, mapping $(x, y)$ coordinates to a scalar vorticity, while the output function could represent the vorticity field at a later time.
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/vorticity.png" alt="semantic segmentation">
-  <figcaption>Placeholder caption describing the vorticity example.</figcaption>
+  <figcaption>A good example of a function to function problem</figcaption>
 </figure>
 
 The issue is that functions are typically represented in an _infinite-dimensional_ basis, which makes it difficult to apply traditional neural network architectures that are designed for finite-dimensional inputs and outputs.
@@ -103,7 +103,7 @@ The trade off is that each layer loses the ability to independently capture high
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/filters.png" alt="filters">
-  <figcaption>Placeholder caption describing the learned filters.</figcaption>
+  <figcaption>FNO filters vs CNN filters. The CNN filters are smaller since they're more local</figcaption>
 </figure>
 
 
@@ -130,7 +130,7 @@ The goal is to take a $128 \times 256$ image from the dataset and predict a $128
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/segmentation_example.png" alt="segmentation-example">
-  <figcaption>Placeholder caption describing a Cityscapes segmentation example.</figcaption>
+  <figcaption>a semantic segmentation example</figcaption>
 </figure>
 
 During training, I apply extensive augmentations (flips, shears, rotations, translations, etc) to the data to improve generalization performance.
@@ -171,12 +171,12 @@ Changes included:
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/fno-vs-unet-metrics.png" alt="metrics">
-  <figcaption>Placeholder caption describing the FNO vs U-Net training metrics.</figcaption>
+  <figcaption>unet ate down</figcaption>
 </figure>
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/fno-vs-unet-sample.png" alt="example">
-  <figcaption>Placeholder caption describing a sample FNO vs U-Net prediction.</figcaption>
+  <figcaption>predictions from both models on a sample from the validation set</figcaption>
 </figure>
 
 There is much more to do! The next step for really comparing performance is using [nightly torch code to squeeze out extra performance on complex ops](https://github.com/pytorch/pytorch/issues/125718) and trying out more architectural tweaks, but that's outside the scope of this post.
@@ -195,12 +195,12 @@ Below are the results of training both architectures on 14 epochs of the data, w
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/fcn.png" alt="metrics">
-  <figcaption>Placeholder caption describing the FCN vs FNO metrics.</figcaption>
+  <figcaption>fcn vs fno metrics.</figcaption>
 </figure>
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/fcn-img.png" alt="example">
-  <figcaption>Placeholder caption describing a sample FCN vs FNO prediction.</figcaption>
+  <figcaption>fcn vs fno comparison.</figcaption>
 </figure>
 
 They perform almost identically! Why?
@@ -218,12 +218,12 @@ Similarly to before, we'll train an FNO, UNet, and USS for 7 epochs with minimal
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/unet-sans-skip-curves.png" alt="metrics">
-  <figcaption>Placeholder caption describing the UNet Sans Skip training curves.</figcaption>
+  <figcaption>unet vs uss vs fno</figcaption>
 </figure>
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/unet-sans-skip-example.png" alt="example">
-  <figcaption>Placeholder caption describing a sample UNet Sans Skip prediction.</figcaption>
+  <figcaption>unet vs uss vs fno. notice the traditional fno green smear.</figcaption>
 </figure>
 
 Woah! There is a gap between the UNet and the USS, but it's small! This is pretty surprising to me, I expected the skip connections to be much more important for performance.
@@ -253,12 +253,12 @@ We'll again train an FNO, USS, a UFNO with naive downsampling, and a UFNO with m
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/4-model.png" alt="metrics">
-  <figcaption>Placeholder caption describing the four-model comparison metrics.</figcaption>
+  <figcaption>4 model death match</figcaption>
 </figure>
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/fno-unet/4-model-comp.png" alt="example">
-  <figcaption>Placeholder caption describing a sample four-model comparison.</figcaption>
+  <figcaption>we couldn't get rid of the green smear.</figcaption>
 </figure>
 
 So... that didn't work! The max pool outperformed the Naive downsampling, but both were pretty bad and underperformed the naive FNO!
