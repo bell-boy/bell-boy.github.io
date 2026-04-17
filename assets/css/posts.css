@@ -19,6 +19,22 @@ img {
     margin: auto;
 }
 
+figure {
+    max-width: min(40em, 100%);
+    margin: 1.5rem auto;
+}
+
+figure img {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-style: italic;
+}
+
 div.highlight {
     overflow-x: scroll;
 }
