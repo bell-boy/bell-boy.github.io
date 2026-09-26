@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="{{ '/assets/css/posts.css' }}" />
+        <link rel="stylesheet" href="{{ '/assets/css/posts.css' | relative_url }}?v={{ site.time | date: '%s' }}" />
         <link rel="stylesheet" href="{{ '/assets/css/main.css' }}" />
         <link rel="stylesheet" href="{{ '/assets/css/code-style.css' }}" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -36,6 +36,10 @@
             <hr />
             {{ content }}
         </div>
+        <script defer src="{{ '/assets/js/image-captions.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+        {% if page.margin_footnotes %}
+        <script defer src="{{ '/assets/js/margin-footnotes.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+        {% endif %}
         <script>
             window.MathJax = {
                 tex: {
@@ -65,5 +69,6 @@
             defer
             src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"
         ></script>
+        {% include external-links.html %}
     </body>
 </html>
