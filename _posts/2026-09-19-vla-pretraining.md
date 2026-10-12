@@ -12,22 +12,23 @@ _This is a post in a series of posts about that seek to answer interesting quest
 Recently, we've seen a wave of impressive generalist robotics demos for manipulation. Models can now complete complex manipulation tasks over long time horizons, and learn in context from long human demonstrations. 
 Yet we're still at the point where the compute required to train these generalist models is still within reach for acadamia. 
 The robotics race is starting to heat up, and industry pressures mean that robotics labs are publishing less and less. 
-So before the frontier pulls away from open knowledge, I think now is a great time to try to answer the question: **What is the best way to pretrain a generalist robotics policy for manipulation?**
+So before the frontier pulls away from open knowledge, I think now is a great time to try to answer the question: **What's a good starting point for learning a generalist policy for manipulation?**
 
-I'm going to spend the rest of this blog post convincing you that the literature currently supports the following recipe:
-1. Collect as much robot data as you can, obviously it's ideal to have a ton of target embodiment data, but even data from other embodiments will help.
-2. Assemble a mix of visual reasoning data and finetune a pretrained vision language model (VLM).
-3. Take the model generated in the last step and add an action transformer: this action transformer will use _flow matching_ to generate _action chunks_ conditioned on the hidden states of the VLM via cross-attention.
-4. Now using flow matching, train the architecture above with a Behavior Cloning objective on the dataset from step 1.
+I'm going to spend the rest of this blog post convincing you that the literature currently supports the following (simplfied) recipe:
+1. Collect as much robot data as you can. It's ideal to have a ton of target embodiment data, but even data from other embodiments will help.
+2. Take a pretrained VLM and attach an action expert. This action expert should also be a transformer, conditioning on the VLM hidden states via attention.
+3. Train the architecture above with a Behavior Cloning objective on the dataset from Step 1.
 
-I'll then discuss pathologies of our current method, and the open research directions trying to address them.
+It's worth noting that the strength of the support for each of these steps _varies_. Some steps (like 1 and 4) have a strong backing and seem unlikely to change soon, while we'll see that other steps (like 2) don't have nearly as much evidence.
+
+We'll then try to get a sense for the policy quality this recipe produces using modern benchmarks. We'll go further and talk about the limits of policy generalization ability.
 
 # Glossary
 
 Definitions of the most common jargon you'll see throughout this post.
 
-**Policy**: The "brain" of the robot. This is a function that takes in some inputs (e.g. camera data, a text prompt, the current position of the robot) and produces robot actions.
-The policy is said to produce an action **conditioned** on it's input.
+**Policy**: The "brain" of the robot. This is a function \\( \\pi(a | s) \\) that takes in some inputs \\( s \\) (e.g. camera data, a text prompt, the current position of the robot) and produces a probability distribution over actions.
+The policy is said to produce an action distribution **conditioned** on it's input.
 
 **Task Specific Policy**: Also referred to as narrow policies, these policies are trained to perform a single task. While they might be able to do this task robustly in many different environments, they aren't expected to perform any other tasks.
 
@@ -43,16 +44,16 @@ This just refers to when the conditions we evaluate under (like environment, obj
 
 # Robot Data
 
-Before we talk more about data, we should note that how we plan to deploy our policy potentially has a huge impact on the data we'd want to train on.  
-Imagine we only cared about our policy stacking blocks, we might make very different data decisions compared to the company that only cares about policies folding clothes!
-
-Additionally, how we want to condition (i.e. prompt) our policy impacts our decisions as well.
-If we want to use text to ask our policies to do different things, they're going to need examples of that in their training data!
+Data, like the rest of deep learning, is of central importance in Robot Learning. Our goals directly shape the type of data we want to collect and the format we want to collect it in.
 
 For the sake of our discussion, let's assume we know what we want our robot to do, and we know the hardware we want the robot to do it on.
 We'll refer to what we want the robot to do as the _target task_(s), and the robot body we want to deploy our policy on as the _target embodiment_.
 
-In [Data Scaling Laws In Imitation Learning For Robotic Manipulation](https://arxiv.org/pdf/2410.18647) _Lin et al._ show that if you scale target task data in diverse environments on the target embodiment[^1], you get a robust single-task policy that can execute the target task at high sucess rates (90%) in completely unseen environments!
+Additionally, we'll also have some known way of "prompting" our policy to execute some given task. Policies that can be prompted this way are called *goal conditioned*.
+There are various forms of goal conditioning, but the most common method you'll see is language.
+We'll want this goal-conditioning (or a something similar) to be present in our data as well.
+
+In [Data Scaling Laws In Imitation Learning For Robotic Manipulation](https://arxiv.org/pdf/2410.18647) _Lin et al._ show that if you scale target task data in diverse environments on the target embodiment[^1], you get a robust non-goal conditioned narrow policy that can execute the target task at high sucess rates (~90%) in completely unseen environments!
 
 <figure>
   <video controls playsinline preload="metadata" style="width: 100%;">
@@ -62,223 +63,298 @@ In [Data Scaling Laws In Imitation Learning For Robotic Manipulation](https://ar
   <figcaption style="font-size: 0.85em; color: #777;">Demo from <a href="https://arxiv.org/pdf/2410.18647" style="color: inherit;">Lin et al.</a></figcaption>
 </figure>
 
-This is fantastic! We've solved robotics! Sure these policies aren't generalists, but I'm confident we just need to collect a large diverse high quality demonstration dataset across every task we could ever think to use robots for!
+This is fantastic! We've solved robotics! Sure these policies aren't generalists, but it seems likely that we can get there by scaling diverse data across many different tasks.
 
 The only problem is that this is insanely expensive.
 
-We're in _academia_! I'm an undergrad! Where am I going to find the time to record millions of demonstrations across the gamut of human ability! It's over!
+We're in _academia_! I'm an undergrad! Where am I going to find the time to record millions of demonstrations across the gamut of human ability!
 
-But wait! All hope is not lost!
-Over the years, academia has collected thousands of hours of data across various robots! Sure it's not all on our target tasks and it's not on our target embodiment, but it must be better than nothing right?
+Thankfully, academia has spent years collecting thousands of hours of data across various robots! Sure it's not all on our target tasks and it's not on our target embodiment, but it must be better than nothing right?
 
-Right! There's a long line of evidence showing that training policies on large diverse robot datasts helps makes policies better across various axes!
+Right! There's a long line of evidence showing that training policies on large diverse[^2] robot datasts helps makes policies better across various axes!
 
 [Open X-Embodiment](https://arxiv.org/pdf/2310.08864v5) was a huge effort across various academic institutions to create a large open source dataset for training generalist policies. 
 They then tried to answer the question: _Does training on diverse robotics data across various embodiments improve task performance over training on narrow task specific datasets?_ 
 For tasks with small scale datasets, the results are a resounding yes! Almost always, their generalist policy out performed methods trained on just the targeted data.
 For tasks with larger datasets, the results were mixed. When the generalist policy was matched against a policy with the same architecture but trained only on the target task, the single task policy usually ended up on top. They posited that the architecture was too small to absorb the extra data and showed that a larger architecture trained on the the full dataset did end outperforming the smaller architecture trained on more targeted data.
 
-[Octo](https://arxiv.org/pdf/2405.12213) Went further and trained on a larger split of OXE which they cleaned and filtered. While they found that the resulting policy performed better than the policies trained in OXE out of the box, they also show that fine-tuning Octo to perform a new task on a new embodiment is often much more data-efficent than training a policy from scratch! 
+[Octo](https://arxiv.org/pdf/2405.12213) Went further and trained on a larger split of OXE which they cleaned and filtered. Again, they find that the resulting policy outperforms policies trained from scratch. They also show that fine-tuning Octo to perform a new task on a new embodiment is often much more data-efficent than training a policy from scratch! 
 
-[Pi0](https://arxiv.org/pdf/2410.24164), a much larger model later developed by many of the same people behind Octo, would train on an even larger dataset of diverse manipulation data (~ten thousand hours from online reports! Compare to the one thousand hours for octo) and strongly outperform octo on tasks seen during training! They also claim that pretraining improves data-efficency compared to training from scratch.
+[\\(\pi_0 \\)](https://arxiv.org/pdf/2410.24164), a much larger model later developed by many of the same people behind Octo, would train on an even larger dataset of diverse manipulation data (~ten thousand hours from online reports! Compare to the ~one thousand hours for octo). Again they show that the resulting policy performs better than policies trained from scratch, and that it's much more efficent to finetune pretrained policies. 
 
-![Pi0 task progress after fine-tuning, compared with training from scratch and zero-shot evaluation.]({{ '/assets/images/vla/pi0-complex-tasks.png' | relative_url }})
+![\\(\pi_0 \\) task progress after fine-tuning, compared with training from scratch and zero-shot evaluation.]({{ '/assets/images/vla/pi0-complex-tasks.png' | relative_url }})
 
-To investigate these claims, the Large Behavior Model team at the Toyota Research Institute performed a [A Careful Examination of Large Behavior Models for Multitask Dexterous Manipulation](https://arxiv.org/pdf/2507.05331v1). They seek to compare the performance of policies like Octo, Pi-0 and those trained in Open X Embodiment to policies trained from scratch. 
-What makes this paper notable is that it's incredibly well executed. 
+To investigate these claims, the Large Behavior Model team at the Toyota Research Institute performed a [A Careful Examination of Large Behavior Models for Multitask Dexterous Manipulation](https://arxiv.org/pdf/2507.05331v1). They seek to compare the performance of generlist policies to those trained from scratch. 
 The paper is approachable and easy to read, and their claims are clear and well supported by the experiment results. At the same time, the experiments are done with a level of rigour not often seen in the literature! 
 I highly reccomend reading this paper yourself, but some of their key findings are that:
-1. Large Behavior Models (their name for generalist policies) do perform similar to narrow polices out of the box when evaluated on tasks seen during pre-training.
-2. Finetuning generalist policies does produce a small performance benefit compared to training from scratch when in distribution. But more importantly...
-3. Finetuned generalist policies are much more robust to distribution shift than polices trained on smaller target data!
+1. Large Behavior Models (their name for generalist policies) perform similar to narrow polices out of the box when evaluated on tasks seen during pre-training.
+2. Finetuning generalist policies does produce a small performance benefit compared to training from scratch when in distribution.
+3. Finetuned generalist policies are much more robust to distribution shift (i.e. new environments and objects) than polices trained on smaller target data!
 
 ![Results from Toyota Research Institute: success rates for single-task policies, Large Behavior Models, and fine-tuned Large Behavior Models, without distribution shift (top) and with distribution shift (bottom). Focus on the 'aggregate' columns to get a clear picture of the results.]({{ '/assets/images/vla/tri-results.png' | relative_url }})
 
-A subtle detail arises when we consider how to represent robot actions during training. [Demystifying Action Space Design for Robotic Manipulation Policies](https://arxiv.org/pdf/2602.23408) compares four approaches to action represention: absolute joint angle, absolute end effector frame, delta joint angle, delta end effector frame.
+Now that we're training on multiple embodiments, we need an action represention that makes experience across these embodiments transferable. [Demystifying Action Space Design for Robotic Manipulation Policies](https://arxiv.org/pdf/2602.23408) compares four approaches to action represention: absolute joint angle, absolute end effector frame, delta joint angle, delta end effector frame.
 - **Absolute joint angle** asks the policy to output absolute joint angles, meaning we precisely specify the pose the robot should be in.
-- **Absolute end effector frame** asks the policy to output the position and rotation of the end effector (usually the gripper in manipulation setups) in 3D space. Inverse Kinematics is used to figure out how to move the joints to said space
+- **Absolute end effector frame** asks the policy to output the position and rotation of the end effector (usually the gripper in manipulation setups) in 3D space. Inverse kinematics is used to figure out how to move the joints to said space
 - **Delta joint angle** asks for the change in joint angle relative to the current pose. We specify how the current pose should change over the next time step
 - **Delta end effector frame** asks the policy for the change in the position of the end effector relative to it's current position. Again, inverse kinematics can be used to figure out how to move the joints to the correct pose.
 
-![Absolute commands specify target joint angles or end-effector poses; delta commands specify changes from the current state. These planar examples express position changes in the robot's base frame.]({{ '/assets/images/vla/action-representations-blog.png' | relative_url }})
+![Absolute commands specify target joint angles or end-effector poses; delta commands specify changes from the current state.]({{ '/assets/images/vla/action-representations-blog.png' | relative_url }})
 
 They find that while delta joint angle produces the best policies when the data comes from a single embodiment, delta end effector frame produces policies that perform much better on diverse embodiments, and adapt well to new ones.
 
 Finally, a common trend amongst robotic manipulation papers that employ large scale training is to train on a re-weighted (meaning some samples have a higher likelihood be being repeated) subset of these large datasets.
 While more data helps, we can't avoid the fundamental issue of garbage in, garbage out.
 
-Though most of the dataset weighting reported in papers like pi0 and Octo was done by hand, [Re-Mix](https://arxiv.org/pdf/2408.14037) is a great step in understanding how to systematically re-weight our data, using a min-max based objective to choose dataset weights. They see sizable gains in performance in policies trained on the dataset they evaluated on, though more work is needed.
+Though most of the dataset weighting reported in papers like \\(\pi_0 \\) and Octo was done by hand, [Re-Mix](https://arxiv.org/pdf/2408.14037) is a great step in understanding how to systematically re-weight our data, using a min-max based objective to choose dataset weights. They see sizable gains in performance in policies trained on the dataset they evaluated on, though more work is needed.
 
 
-So to summarize:
+So to summarize our findings on data:
 - Modern methods can extract high performance on manipulation tasks from demonstration data
 - In the absence of a large amount target data, we can leverage non-target robot data to imrpove performance.
-- There are various ways we can represent actions, and the method we choose has significant impact on our policies performance.
+- There are various ways we can represent actions, and the method we choose has significant impact on our policy's performance.
 - Naively training on all the data out there won't necessarily produce the best policy. Various methods have been proposed for data selection, but the best such method is still an open area of research.
+
+# Behavior Cloning, Action Chunking, and Flow Matching
+
+The primary objective that pre-training methods use is **behavior cloning**.
+
+Under behavior cloning, we're given some dataset of state-action[^5] pairs \\(S = \\{(s_{i}, a_{i})\\}\\) sampled from some reference policy 
+(meaning \\( a_{i} \\sim \pi ( \cdot | s_{i}) \\)  where
+\\( \pi \\) is our reference policy) and our goal is to match the reference policy as best as possible.
+
+Behavior cloning is a natural objective to use because it allows us to learn from demonstration data, but there are two cruicial modern pieces for it's success.
+
+## Action Chunking
+
+The paper [ALOHA](https://arxiv.org/pdf/2304.13705)'s impact can be felt throughout the robot learning space. 
+While it has two major contributions, the relevent one for our purposes is the demonstration that _action chunking_ combined with behavior cloning produces better policies than behavior cloning alone.
+
+Under standard behavior cloning, policies consume one observation then predict one action. 
+Under _action chunking_, policies consume one observation then predict _multiple actions_.
+Naively executing these policies results in jerky motions, so the paper proposes a fix for this called _temporal ensembling_. 
+Under temporal ensembling, at each timestep $t$ we sample the next $K$ actions. Instead of executing the current action at each step, we instead execute an expoential moving average of the past $K$ predictions for this timestep.
+
+![Image from Zhao et. al describing the action chunking inference scheme]({{ '/assets/images/vla/act.png' | relative_url }})
+
+It's kind of mysterous as to why action chunking works so well. 
+It was originally thought that by training policies to predict chunks, we reduce the horizion at which errors can accumlate over. 
+But, it was later noticed that this alone wasn't enough to explain the superior performance of the technique.
+The [best investigation](https://arxiv.org/pdf/2608.02547) into this question that I know of argues that instead, it's the _ensembling_ of actions predicted using multiple observations that helps reduce compounding, often _more so_ than the chunking! 
+
+## Diffusion Policy
+
+[Diffusion Policy](https://arxiv.org/pdf/2303.04137) is another ground breaking paper that solved a central challange at the time: What action should my policy pick when there are multiple good options?
+
+Usually, we model actions as continous $d$ dimensional vectors, so our policy must generate a continous distribution over these $d$ dimensional vectors. 
+This is non-trivial, since the space of possible outputs is infinite!
+
+The standard solution for a while was to predict a single action with a regression loss[^3], or model the action distribution with a single Gaussian. A Gaussian can change its mean and variance, but it always has just one peak.
+
+This works well when good actions cluster around one choice. But when there are multiple distinct choices for the _same observation_, squared-error regression learns their _average_, which can be an invalid action. Imagine reaching around an obstacle: going left or right might work, but averaging the two sends the gripper straight into it! Even a Gaussian with learned variance can't represent both peaks, it spreads probability across the gap between them.
+
+<figure>
+  <img src="{{ '/assets/images/vla/bc-gaussian-vs-multimodal.svg' | relative_url }}" alt="Two panels compare demonstration distributions with their best single-Gaussian fits. For one cluster the mean sits at its peak; for two clusters the mean sits in the low-density gap." loading="lazy" width="1040" height="510" style="width: 100%; height: auto;">
+  <figcaption class="image-caption">A one-dimensional toy example, holding the observation fixed in each panel. Blue shows the demonstration distribution; orange shows the Gaussian that matches its mean and variance. The diamond marks the mean, also the optimal squared-error prediction.</figcaption>
+</figure>
+
+Instead Diffusion Policy leverages the fact that diffusion models[^4] can learn complex continous distributions given only data sampled from that distribution. 
+So instead of trying to always pick the single correct action, we _sample_ one of the good actions from our policy's action distribution!
+
+[Flow matching](https://arxiv.org/abs/2210.02747)[^7], similar to diffusion, also learns distributions from data. Flow matching starts with a sample of standard Gaussian noise, then uses the model to repeatedly push them to the target distribution. As those samples move, their distribution can develop multiple peaks. At the end, we have a sample from the learned action distribution.
+
+<figure>
+  <img src="{{ '/assets/images/vla/bc-flow-evolution.svg' | relative_url }}" alt="Four density snapshots show standard Gaussian noise becoming a two-peaked action distribution. Below, a density map and individual sample paths show noise samples moving toward the two action modes as sampling time increases." loading="lazy" width="1040" height="710" style="width: 100%; height: auto;">
+  <figcaption class="image-caption">An idealized flow toward the same two-peaked toy distribution. The curves and sample paths are computed from an analytic velocity field, rather than a trained policy. Sampling time τ runs from noise to actions; it is separate from robot execution time.</figcaption>
+</figure>
+
+So in summary:
+- Behavior Cloning is the natural objective when we want to learn policies from demonstration data.
+- Naively predicting the next action based on the current obseravtion results in brittle policies.
+- There isn't strong consensus about why action chunking works, but emperically it provides strong gains.
+- Action distributions can be _multimodal_. Squared-error regression averages distinct choices, potentially producing invalid actions. **Diffusion and flow matching** let us model multiple modes and sample actions from the learned distribution.
+
+# Vision Language Action Models
+
+Vision Langauge Action models, VLAs, are the dominant paradigm in generalist robotics. 
+For a while, they seemed to be the _only_ relevant architecture in generalist robotics.
+As such, there isn't much work rigourously comparing them to other model classes.
+So I can't claim that VLAs are the _best_ architecture we have for generalist robot learning, just that they're the _default_.
+
+Recent research has proposed a new class of models -- World Action Models (WAMs) -- as an alternative. We'll talk about these later.
+
+To motivate VLAs, let's take a look at the architecture of Octo, one of the earliest generalist policies and one of the last major generalist non-VLA policies.
+At it's core, Octo is a transformer that takes in a description of the current goal (via an image description of the desired end state or a text prompt telling the model what to do) and a sequence of observations (images in octo's case), both encoded as tokens.
+
+To turn images and text into tokens, Octo uses two seperate encoders.
+A pretrained language encoder produces lanugage tokens, and a learned image encoder produces image tokens.
+
+![Visualization of the Octo architecture]({{ '/assets/images/vla/octo.png' | relative_url }})
+
+Now what if instead of using disjointed encoders for language and vision so that the _policy_ has to learn to connect them (i.e. understand that when we refer to an apple, we mean 🍎), we use a pretrained encoder which has _already_ connected language and vision!
+
+Vision Language Models (VLMs) are Large Langauge Models trained to also predict text based on images as well. They fit our encoder description almost perfectly.
+
+This is the key idea behind VLAs.
+
+\\(\pi_0 \\) (the cannonical VLA) has two major components: a pretrained Vision Language Model (PaliGemma-3b) and an action head[^9].
+
+<figure>
+  <img src="{{ '/assets/images/vla/vla-attention-gradients.svg' | relative_url }}" alt="Action-transformer queries attend to keys and values from VLM hidden states at successive layers. Dashed gold arrows trace gradients from the flow-matching behavior-cloning loss back through the action transformer and attention into the VLM." loading="lazy" width="1000" height="660" style="width: 100%; height: auto;">
+  <figcaption class="image-caption">Gray arrows show forward computation; dashed gold arrows show a training-gradient path. The action expert reads the VLM's hidden states, and action supervision trains both. This is a schematic of the information flow: \(\pi_0 \) implements these connections with shared masked attention.</figcaption>
+</figure>
+
+The VLM takes in a task prompt and images corresponding to the current observations. During inference, it does not generate text. Instead, the action transformer attends to the VLM's intermediate hidden states, while also conditioning on proprioception. The action head learns the action distribution via flow matching.
+
+The flow-matching loss is the behavior-cloning objective. Its gradients propagate through the action head and attention connections into the VLM, encouraging its representations to be more useful for predicting actions.
+
+## Training VLAs
+
+Since the release of \\(\pi_0 \\) in 2024, we've learned a bit more about how to best train VLAs, and I want to mention a few of the most impactful parts of the updated recipe.
+
+### Co-training
+
+The size of available robot data is many orders of magnitude smaller than pretraining datasets used when training LLMs. It's also costly to spend time teleoperating and collecting more data.
+As a result, there's been a substantial amount of effort to figure out how to learn from alternative sources of data that are either 1) easier to collect 2) more naturally abundant. 
+
+Training on auxilary data to improve robot performance is known as _co-training_.
+
+There's strong evidence to believe that your co-training data should include a mix of standard vision langauge data and densely annotated human and robot video, and growing evidence that retargeted human ego-centric data is of value.
+
+The Toyota Research Institute has a great paper studying this exact question. Like the other TRI paper mentioned, [A Systematic Study of Data Modalities and Strategies for Co-training Large Behavior Models for Robot Manipulation](https://arxiv.org/pdf/2602.01067v1) is a _fantastic_ paper. In it, multiple co-training methods from the literature are tried. They only find strong support for the following forms of data
+1. Standard vision-language data: Data consisting of an image, some question about it's contents, and an answer.
+2. Vision Language Model annotated Human & Robot video. A language model is given a video and asked to describe in detail what's happening in it. This can be see as standard vision-langauge data with the question "describe this video".
+
+Notebly, both of these forms of data _don't_ improve in distribution manipulation performance! Their benefit instead comes from improving performance _out of distribution_!
+
+<!-- maybe an example of both forms -->
+<!-- plot from paper -->
+
+We can get some validation of their findings from the [\\( \pi_{0.5} \\)](https://arxiv.org/pdf/2504.16054) report. Physical intellegence finds that a mix of data that the TRI would call "standard vision-langauge data" (they refer to it as multi-modal web data) greatly improves out of distribution success rates.
+
+<!-- footnote about how TRI and pi0.5 disagree -->
+
+While there's less rigourous empirical support, there's been a substatital wave of interest in utilizing human ego-centric data to improve policy performance. Typically in ego-centric pipelines, huamns wear a some camera rig that records what they see from a first person point of view. We later apply hand pose estimation models to get "actions" from these human videos. [EgoVerse](https://arxiv.org/pdf/2604.07607) evaluates this setup and find that when the human videos match the finetuning data, it leads to moderate imrpovement over just training on robot actions. They find almost no benefit to training on diverse human video data, but increased benefit when diverse data is paired with human data that better "matches" the robot training data.
+
+<!-- images explaining the above paragraph -->
+
+[EgoScale](https://arxiv.org/pdf/2602.16710) in contrast trains on _thousands_ of hours of human video, and finds that at this scale, there's a clear benefit to scaling diverse human data -- with a few caveats.
+1. Like EgoVerse, they apply hand pose estimation to start extracting actions from human video, but in addition, they _retarget_ the human hand poses to the robot hand space, trying to find the robot pose that best "matches" the human pose. It's this retargeted hand pose they train on.
+2. They include EgoDex, a dataset captured with an Apple Vision Pro, which has built in sensors that can label joints with better precision than images alone. They never ablate this addition. This is about ~4% of their dataset.
+
+Additionally, similar to EgoVerse, they find that adding human data that matched robot data substantially improved perforamce. With the caveat being that the matched human data they collected didn't use the retargeting data pipeline the pretraining data used, instead they used hardware to exactly measure joint positions and had the camera setup match exactly the setup of their target embodiment.
+
+<!-- ego scale plots -->
+
+Their results are promising and scary at the same time. On the one hand, human pretraining greatly acclerates learning from finetuning, on the other hand on the scale needed to even get to 50% success rates is mind-boggling.
+
+
+
+### Gradient Management
+
+Multiple groups have independantly noticed that naively allowing action gradients to flow through cross attention from the uninitialized action head results in worse performance than more restrictive forms of information flow, like having the action head take in the last token's hidden state, and letting gradients only flow through that. There have been many solutions proposed.
+
+Knowledge insulation, TRI co-training paper, VLM training mixtures
+
+## World Action Models
+I'd be remiss to not at least mention the primary alternative to VLAs -- World Action Models.
+
+I don't really like this term. It doesn't point to a narrow class of models like VLA does, but it's the name that stuck.
+
+In summary:
+- The default architecture for most generalist policies is the **Vision Langauage Action** Model
+- Since VLMs are pretrained to understand both vision and langauge, VLAs use them as a backbone to leverage this understanding to take actions
+- There are a few subtle details to make VLA training go well and get the most our of your data. 
+- There's not many of comparisions between VLAs and alternative architectures, in large part because there are few alternatives!
+
+# Limitations of The Recipe
+
+While we have abundant evidence that it's possible to pre-train robotic polices for improved performance over narrow polices, we don't have much evidence for various forms of _generalisation_.
+
+In this section, we try to find out what we can say about generalist policy performance *out of distribution*.
+
+## Environment & Object Generalization
+
+Enviornment and object generalization -- the ability to perform the same task in a new environment or with different objects -- is what people commonly refer to when they mention generalization. 
+
+This is probably also the best studied. As mentioned earlier, the Toyota Research Institute has a [great paper]() studying the effects of generalist training on this type of generalization. To reiterate: Generalist policies are more robust to environment and generalization shifts then narrow policies. 
+
+<!-- maybe re-present plots? -->
+
+Though the generalization is improved compared to the baseline, it's not of high enough quality to where we can deploy generalist policies zero-shot in new environments without further retraining.
+
+We have evidence that by scaling diverse data (via [Lin et al.]()), zero-shot generalization to new objects can be improved, but strong generalization remains to be seen in any open policy.
+
+## Compositional Generalisation
+
+One desridata that we might have for a generalist policy is that it may learn how to _compose_ atomic skills learned in pretraining or finetuning.
+
+If we know how to open drawers and place things in open drawers, we should be able to open drawers *and then* place things in open drawers, without ever seeing this combination in training.
+
+
+[RoboHiMan](https://arxiv.org/pdf/2510.13149) sets out to test this question by constructing a hiarchy of 4 datasets to train on. 
+1. The first dataset is simply all of the atomic skills that plan to evaluate. All collected in roughly the same setting
+2. This dataset is all of the atomic skills but with _pertubations_ (meaning different lighting conditions, objects, environments) that match the pertubations that will be applied during evaluation in addition to the first dataset.
+3. This dataset adds some of the composite skills we evaluate on, collected in roughly the same setting.
+4. This final dataset adds those same composite skills but collected under pertrubed conditons.
+
+They then evaluate success rates on atomic skills and composite skills
+
+The paper finds that polices trained under our recipe (\\(\pi_0 \\)) using datasets L1 or L2 can't learn to compose skills like those demonstrated in L3 and L4.
+
+[plot of \\(\pi_0 \\) and \\(\pi_{0.5} \\) results]
+
+You'll notice that it also doesn't seem like the policies learned the composite skills _even when explicitly trained on them_. This begs the question, how much of their results were due to poor policy performance vs a failure to compose?
+
+[Atom-Bench](https://arxiv.org/pdf/2606.16826) sets up similarly to RoboHiMan: They have a set of atomic skills and composite skills built up from those atomic skills. They collect demonstrations on the atomic skills and attempt to see if the model can complete the composite skills zero-shot. 
+
+[plot]
+
+Similar to RoboHiMan, they find that the models can't compose skills zero-shot. Interestingly, the come up with a metric to analyze what fraction of the failure is due to poor learning of the composite skills and what fraction is due to failure to compose.
+
+They give each atomic skill a scoring rubric, to reward the policy for partial progress. For example, a simple task like "pick up the fork and place it in the plate" might give one point for picking up the fork, and another fork for picking up the plate.
+
+Since all composite skills they test are made up of atomic skills, they can also combine these atomic rubrics for a composite rubric.
+
+Now, in theory, if the policy had no issues composing skills, then the average score on a composite task should be the sum of the scores we get when we execute each of the atomic subskills in isolation. 
+
+To measure the amount of failure that can be attributed to compositional failures, they introduce the metric _Compositional Failure Share_ (CFS). CFS is 0% when the average composite score is identical to the sums of the average atomic scores, and 100% when the atomic scores are executed perfectly but we still see a non-zero amount of failure.
+
+As you see in the plot, the policies trained under our recipie have pretty high compositional failure shares, and \\(\pi_{0.5} \\)'s compositional failure share is close to 100%!
+
+## Langauge Generalisation
+
+We now want to ask the question: What happens when I _rephrase_ a task seen during training?
+
+There aren't many comprehensive studies of language generalisation alone, however, a couple papers try to include language generalization in a suite of benchmarks testing policy robustness.
+
+[LIBERO-Plus]() has a few particularly clean experiments, showing that 1) Current manipulation policies are shockingly robust to language instructions, often being able to execute the correct task despite being given an empty string. 2) Current manipulation policies fail to generalize tasks to new objects pointed at via text. 
+They then claim that this suggests that modern generalist policies aren't really paying much attention to the goal conditioning string.
+<!-- explain he meaning of this, plus the setup some more. also this is libero so... overfitting? -->
+<!-- how does this square with the earlier results? didn't I just say strong object generalisation -->
+
+% TODO plots son
+A similar observation was noticed by TRI when performing their study:
+
+> some quote here
+
+
+# Conclusions & Further Areas of Research
+
+Thank you so much for reading this far! Despite being such a long read, there's still so much I haven't covered (namely, WAMs). Please feel free to reach out with any questions or feedback you have on the post, and stay tuned for an upcoming post on posttraining and RL!
 
 [^1]: They use Universial Manipulation Interface to collect data, so they aren't _technically_ on the target embodiment, but UMI data looks enough like target data that we'll give it a pass.
 
----
+[^2]: Emphasis on _diverse_. A key finding of Lin et al. is that smaller more diverse datasets can outperform larger more uniform ones.
 
-# Notes so far
-open embodiment x: first massive dataset of labeled robot policies,
-enabled the first wave of open research, but has quality issues.
+[^3]: This is done by trying to minimize the \\(\text{L}_2\\) loss $\lVert\mathbf{a}_t - \hat{\mathbf{a}}_t\rVert^2$
 
-first major sub question: can the deep learning playbook learn good policies from data?
-- we have much evidence that: yes this is possible (as early as 2022! examples include Octo, RT-1)
-- "good" is a bit loose here. Tasks we're evaluating on are a bit simple, and we have the recurring trend of papers selectively reporting evals and not contstructing evals where their policy fails
-    - as a result, it's really hard to measure improvement over time
-    - we can try to evaluate models ourselves on Robocasa365 (diverse simple robotics tasks) and RoboDojo (really stress tests generalization + harder tasks)
-- RT-2 shows that if we want our policies to be language conditioned, we can *reuse* VLM backbones to improve generaliztion without needing to train much on robotics data
-    - This improves over policies like Octo, and their struggle to connect visual cues to language
-    - pi0 also does this but not retardedly
-        - though the claim stuff like their datamix is harder for openvla than it is for pi0... why? we can't see the datamix... it's over
-    - These models show some limited generalization ability
-        - Both across language objectives and environments, limited evidence that skills transfer across embodiments
-    - We have strong evidence that pretraining improves these models ability to learn from further data
-    - These models SUCK at modern benches tho... which have tasks that don't seem that different than the ones in the paper, this is a point of confusion
-    - SOTA recpies don't seem to have significantly diverged however, they just have bigger models and better data.
-- refs for this section:
-    - [octo](https://arxiv.org/pdf/2405.12213)
-    - [openvla](https://arxiv.org/pdf/2406.09246)
-    - [open-x-embodiment](https://arxiv.org/pdf/2310.08864v5)
-    - [pi0](https://arxiv.org/pdf/2410.24164)
-    - [rt2](https://arxiv.org/pdf/2307.15818)
+[^4]: I won't cover what diffusion models are or why they can do this, but it's extremely relevant from an implementation point of view. Please refer to this amazing work at [MIT](https://diffusion.csail.mit.edu/2026/) for an introduction.
 
-next major question: the above gave us a recipie that _seems_ to kind of generalize, but what are the failures that we experience? 
-    - first what kind of evidence did we get from the previous papers
-        - again hard to really make any claims because evals aren't standardized!
-        - octo shows that it gets non-zero generalization within the pretraining distribution when eval'd zero shot + when finetuned octo seems to be more efficent than training from scratch (on about ~100 demos)
-        - pi0 then trains octo on their entire dataset, and it wets the bed even in distribution! what's going on!
-            - best theory, the tasks that octo trains on are much much easier in the original paper than the tasks pi0 trains on! 
-            - so worrying! the conclusions we made above may hold for low complexity tasks, but fall apart for higher complexity ones!
-            - openVLA is also ass! the authors attribute this to a) the lack of action chunking b) low frequency control but don't test this!
-        - this raises some worrying questions: when training on a new task out of the data distribution and a brand new environment, does FT provide any advantage over PT->FT?
-            - pi0 does this experiment! it's results kind of bring context to the "improved finetuning" argument.
-                - On the easiest task: Stack Bowls, the task is mostly a subtask of a pretraining task. The pretrained model seems to have a constant advantage over the scratch model. We see similar results with Towel Folding which is also easy (and note that it seems like the pretrained policy overfits less quickly!)  
-                - On the next level up, the finetuning is basically a wash, neither policy can claim an advantage.
-                - On the hardest level, the pretrained policy get's strcitly worse after being trained on more data and overfits much faster on paper towel replacement, but shows a major advantage over the policy trained from scratch. I'd argue that paper towel replacement uses a skill -- pick and place -- seen commonly in the dataset. While the objects are new, and yes placing the tube on the shaft requires precision, still pick and place
-                    - ~0.5 implies that the policy is getting stuck after successfully removing the paper towel roll
-                    - ~.75 implies that the policy is struggling to place the new roll on which i'll claim is the new part of the task
-                - The hardest task shows exactly no advantage over finetuning from scratch. This is a task not seen at all in the training data on this embodiment, nor (from what I can tell) do any analogs exist in the training dataset.
-                - I think we can weaken the claim somewhat: pretrained policies improve finetuning when the tasks that we're finetuning on are _just_ outside of the pretraining distribution, or partially in partially out.
-    - Let's test that claim by digging into the literature!
-        - The Toytoa Robotic Institute has a great study rigoursly evaluation almost the exact claims of the Pi0 paper on what they call Large Behavior Models
-            - These models don't have a VLM backbone, and instead use pretrained image and language encoders for observation features
-            - And to be fair, these may be the kind of easy tasks that octo was good at, no idea if these results hold on harder task distributions
-            - They have a few interesting results. For instance: They show that without distribution shifts, you see a small, but significant boost to performance when finetuning LBMs. With distribution shifts, the benefit ot finetuning pretrained models becomes much more apparent. 
-            - The main result we care about is the "unseen tasks" result. Given new tasks they claim that pretrained LBMs learn better than LBMs trained from scratch
-                - Concerningly, they seem to expect no language generalization -- given a new language instruction in a familar scene, they don't expect the policy to be able to execute it
-                    - They claim many times that their language encoder is _brittle_, and it's nowhere near the scale of VLMs. 
-                    - A common issue is that the pretrained model would often complete the wrong task!
-                - I claim that for both sim and real tasks, their results show that finetuning pretrained policies can help with adaptation to new tasks unseen in the datamix
-                - But sadly, I think that this doesn't do much to confirm or deny my hypothesis. Since we don't have enough access to the datamix to see what the tasks present are, we can't see how different the tasks are from tasks present in the pretraining data, so we can't test how distance from this distribution changes finetuning performance!
-            - As a result of the above, I'm still of the mind that finetuning is much less useful when the tasks are out of the pretraining distribution!
-    - Okay, the TRI paper shows that we generalize (better) across new environments and objects on tasks that both were in the pretraining distrubtion and that weren't when training a LBM. 
-        - I expect these results to hold for VLAs
-        - What about other forms of generalization? Transfering skills across embodiments, composing skills with language, generalizing to rephrasings
-            - Compositional Generalization: 
-                - RoboHiMan is a relatively recent benchmark that seeks to answer the question: Can VLAs trained on task A and task B perform task A + B?
-                    - The answer is kind of no?
-                    - When finetuned directly on the compositional tasks in a variety of settings, pi0 + pi0.5 get shit performance
-                    - Unsurprisingly, they fail to generalize to longer horizions.
-                    - They find that VLA performance improves when another VLM is used as a high level planner
-                    - Other interesting results we won't get into
-                - Atom-Bench is another great paper that tests this question:
-                    - They find that VLAs often get decent at performing the single tasks, but suck ass at composing skills together
-                    - The even introduce a new metric to test how much of compositional task failure is due do poor skill on each atom (most is due to failure to compose)
-                - I think it's reasonable to claim that with current methods and at current scales, we shouldn't expect compositional generalization 
-            - Embodiment Generalization:
-                - This question, whether the learning of skills on one embodiment transfers to learning on antother embodiment is hard to answer, few papers seeks to measure it directly.
-                - LAP introduces a new method to imrpove zero-shot embodiment generalizsation and in so doing has to answer a weaker form of the question: does the learning of skills on one embodimetn transfer zero shot to another embodiment
-                    - They introduce a method which they claim improves zero-shot transfer
-                    - But compare against pi0 and pi0.5 as a baseline, so we can use this to kind of answer our original question
-                    - They train on OXE + MolomoAct 
-                    - TODO: analyse their data and see if it's reasonable to expect generalization
-                    - We don't see _zero_ generalization, but we don't see very high performance either
-                    - While Zero-Shot evaluation is bad, finetuning may change the question? Results are more mixed here.
-            - Language Generalization: 
-                - LIBERO-Plus shows that policies aren't super robust to rephrasings of the task. They find that a lot of the robustness that does exist can be explained by policies largly not relying on the language input to complete the task
-                - LIBERO-X has a difficulty level that includes language generalization, and we see a non-negliglble drop in performance
-                - Take it with a grain of salt as even though these are improved, LIBERO is a pretty shit benchmark to start off of
-                - Conclusion: VLAs show some degree of robustness to langauge rephrasing, but not a ton
-    - refs for this section:
-        - [TRI LBM Paper](https://arxiv.org/pdf/2507.05331v1)
-        - [RoboHiMan](https://arxiv.org/pdf/2510.13149)
-        - [Atom-Bench](https://arxiv.org/pdf/2606.16826)
-        - [LAP](https://arxiv.org/pdf/2602.10556)
-        - [LIBERO-X](https://arxiv.org/pdf/2602.06556)
-        - [LIBERO-Plus](https://arxiv.org/pdf/2510.13626)
-    - Conclusion: At the current scale of our policies, we see limited amounts of generalization across various axes.
-        - This seems like a lot of work to establish something pretty standard, but value here is getting an intution for what the current recipie can and cannot do at the current scale.
-- 2025-26 brough a wave of new models!
-    - models here were selected based on relevance at release, or things about them which I thought were noteworthy
-    - We're going to report results on modern benchmarks, these papers evals suck
-    - pi0.5, 0.6, 0.7
-        - pi0.5: At a high level, the main contribution of 0.5 over 0 was 1) the scaling of pre-training datasets to incldue much more diverse scenes and task types 2) the introduction of high level goal prediction to improve performance over long tasks
-            - the pretraining dataset is targeted to the task distribution we care about including a substantial amount (400hrs) of data on the embodiment we care about, and more data (how much more isn't specified) on embodiments we don't care about, and a substantial fraction of data on tasks that are less relevent on various embodiments we don't evaluate on.
-                - ALL of these splits are vital for the performance pi0 gets
-                - Notably, the robot's manipulation performance drops when robot data is excluded, but it's generalization performance drops when web data is excluded
-                    - Implies model of manipulation skills are learned from robot data while the generalization of these skills is in large part driven by the VLA?
-                - Both types of robot data missing will cause a drop, but the total drop of them both missing is smaller than the sum of the drops of each of their individual drops.
-                    - Implies model of gains from pretraining data are proportional to the amount of pretraining data already collected?
-                    - Or maybe "effective" dataset size when diversity is accounted for is smaller than the actual size.
-            - High Level Prediction seems effective for improving perf @ first glance, but further inspection shows that most of the gains for high level perf can be attributed to a single post training dataset(!).
-            - Diverse post training data improves performance when paired with sufficently diverse pretraining data
-            - oddly pi0.5 performs really poorly on robocasa365 which should be a slam dunk?
-                - should probably re-run
-        - pi0.6: I don't know how I feel reporting on this. The pi0.6 paper is really about the RL method that they used to post train pi0.6, with minimal attention put on pi0.6. From the scant details they give about pi0.6, it looks like a scale up of both the model and data. The pretrain acheives a decent performance boost over pi0.5, though those gains are eclisped by the post training method introduced. 
-    - gr00t series
-        - n1: main depature from pi series is architecture (they have embodiment specific action encoder and decoders) and they include a massive amount of non robot data from various sources heavily leveraging co-training 
-            - OXE, a humanoid dataset, and AgiBot-Alpha (OXE style dataset over various tasks)
-            - They create various synthetic datasets to train on as well
-                - Simualtion rearranging tasks scaled up with dexmimic-gen
-                - Generated Image to video data labeled with latent actions (Neural Trajectories)
-                - Human video labeled with latent actions
-            - no real ablations for these datasets
-        - n1.5: free the vlm during pretraining + change the adapter, most everything else is this same
-    - xiaomi robotics series
-        - XR-1: scaling of UMI data is the major depature from the pi0 recipe! So much UMI data...
-    - ego-scale
-        - shows human hand data annotated via ml models can be useful for training policies!
-        - needed high quality mid training dataset to bridge the gap
-        - will this work on non human hand data? will this help?
-    - ling-bot va
-- modern policies 
-    - co training
-        - groot n1's extensive use of co-training data motivates a systematic study into the efficacy of this type of data
-        - luckily our goats @ TRI have got us again
-        - in [Lin et al.](https://arxiv.org/pdf/2602.01067), they study the effects of various types of co training data on performance
-        - They find diverse language annotated video and image data strongly improves generalization (!)
-        - Everything else they tried was basically a wash
-        - Misc Interesting Things:
-            - The use only a single token's output layers to condition the flow transformer -- improves generalization. (I think this is one of those things that washes out with scale)
-            - They don't use prio, wonder why (https://arxiv.org/pdf/2608.03052 finds that prio is usually helpful and leads to gains in perf)
-    - umi
-    - video backbones + generalization
-        
-- small details
-    - diffusion
-    - action chunking
-    - surrogate objectives
-    - joint vs eef
-        - https://arxiv.org/pdf/2602.23408 talks abbout this
-        - basically joint space mogs but leads to poor transfer
-    - the vla you use
-    - FAST tokens
+[^5]: State $s_t$ is usually a collection of images taken from cameras attached to the robot + some info about the robot's current state. Currently in robot learning it's not common to (explicitly) predict actions based on a history of observations.
 
 
-talk about non settled things like ego data
-video backbones
+[^7]: Flow matching and diffusion are deeply related. While diffusion was popularized first, flow matching is a lot simpler conceptually and implementation wise. Most modern generalist robotics policies are trained with some variant of Flow Matching loss.
 
-seems like this: 
-1. gather all the robot data you can find literraly all of it
-2. take a vla style architecture
-3. co-train on good vision language annotated data + vision based tasks
-4. train on litterally all of that data
 
-there are some more details like:
-- relative EEF delta seems like the best action space for transfer
-- you want to use action chunking + flow matching
-- what makes good co-training data
-etc
+[^9]: while most VLAs are some variant of the \\(\pi_0 \\) architecture, \\(\pi_0 \\) wasn't the first VLA. [RT-2](https://arxiv.org/pdf/2307.15818) and [OpenVLA](https://openvla.github.io/) both came earlier and don't use an action head. Instead, they teach the VLM to predict actions directly.

@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="660" viewBox="0 52 1000 660" role="img" aria-labelledby="title desc">
+  <title id="title">Action tokens attend to the VLM; action loss trains both</title>
+  <desc id="desc">Task text and camera images enter a pretrained VLM. Each action-transformer block includes attention and an MLP. At successive layers, attention uses queries from action tokens to attend to keys and values from VLM hidden states. The action transformer also conditions on robot state and models an action distribution via flow matching. Dashed gold arrows trace gradients from the behavior-cloning objective through the action transformer and attention into the VLM. Flow-matching mechanics are omitted.</desc>
+  <defs>
+    <marker id="forward" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 8 4 0 8Z" fill="#444444"/></marker>
+    <marker id="gradient" markerWidth="10" markerHeight="10" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 9 4.5 0 9" fill="none" stroke="#ffc300" stroke-width="2"/></marker>
+    <g id="hidden-tokens" fill="#fff5cf" stroke="#444444" stroke-width="1.4">
+      <rect x="0" width="31" height="32" rx="5"/><rect x="40" width="31" height="32" rx="5"/><rect x="80" width="31" height="32" rx="5"/><rect x="120" width="31" height="32" rx="5"/><rect x="160" width="31" height="32" rx="5"/><rect x="200" width="31" height="32" rx="5"/>
+    </g>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #222222; }
+      .label { font-size: 23px; }
+      .small { font-size: 20px; fill: #777777; }
+      .heading { font-size: 27px; font-weight: 700; }
+      .flow { fill: none; stroke: #444444; stroke-width: 2.5; marker-end: url(#forward); }
+      .grad { fill: none; stroke: #ffc300; stroke-width: 3.5; stroke-dasharray: 8 6; stroke-linejoin: round; marker-end: url(#gradient); }
+    </style>
+  </defs>
+  <rect width="1000" height="850" fill="white"/>
+  <path class="flow" d="M44 78H93"/><text class="small" x="108" y="85">Forward computation</text>
+  <path class="grad" d="M420 78H469"/><text class="small" x="484" y="85">Training gradients</text>
+
+  <!-- Inputs and the two sets of transformer weights. -->
+  <rect x="44" y="112" width="320" height="82" rx="12" fill="#f7f7f7" stroke="#dddddd"/>
+  <text class="label" x="204" y="145" text-anchor="middle">Task prompt</text>
+  <text class="label" x="204" y="174" text-anchor="middle">+ camera images</text>
+  <rect x="610" y="112" width="340" height="82" rx="12" fill="#f7f7f7" stroke="#dddddd"/>
+  <text class="label" x="780" y="145" text-anchor="middle">Robot state</text>
+  <text class="label" x="780" y="174" text-anchor="middle">(proprioception)</text>
+  <path class="flow" d="M204 194V221"/><path class="flow" d="M780 194V221"/>
+
+  <rect x="44" y="224" width="320" height="304" rx="15" fill="#fafafa" stroke="#cccccc" stroke-width="1.5"/>
+  <rect x="610" y="224" width="340" height="304" rx="15" fill="#f7f7f7" stroke="#cccccc" stroke-width="1.5"/>
+  <text class="heading" x="204" y="258" text-anchor="middle">Pretrained VLM</text>
+  <text class="small" x="204" y="283" text-anchor="middle">Image / text hidden states</text>
+  <text class="heading" x="780" y="258" text-anchor="middle">Action transformer</text>
+  <text class="small" x="780" y="283" text-anchor="middle">Action tokens supply queries</text>
+
+  <!-- Selected, corresponding layers; arrows carry VLM keys and values. -->
+  <use href="#hidden-tokens" x="89" y="302"/>
+  <use href="#hidden-tokens" x="89" y="378"/>
+  <use href="#hidden-tokens" x="89" y="454"/>
+  <path class="flow" d="M204 338V372"/><path class="flow" d="M204 414V448"/>
+  <rect x="632" y="294" width="296" height="48" rx="8" fill="white" stroke="#bbbbbb"/>
+  <rect x="632" y="370" width="296" height="48" rx="8" fill="white" stroke="#bbbbbb"/>
+  <rect x="632" y="446" width="296" height="48" rx="8" fill="white" stroke="#bbbbbb"/>
+  <text class="label" x="780" y="326" text-anchor="middle">Attention + MLP</text>
+  <text class="label" x="780" y="402" text-anchor="middle">Attention + MLP</text>
+  <text class="label" x="780" y="478" text-anchor="middle">Attention + MLP</text>
+  <path class="flow" d="M780 343V365"/><path class="flow" d="M780 419V441"/>
+  <path class="flow" d="M322 318H628"/><path class="flow" d="M322 394H628"/><path class="flow" d="M322 470H628"/>
+  <text class="small" x="487" y="308" text-anchor="middle">Keys / values</text>
+  <text class="small" x="487" y="384" text-anchor="middle">Keys / values</text>
+  <text class="small" x="487" y="460" text-anchor="middle">Keys / values</text>
+  <text class="small" x="204" y="515" text-anchor="middle">No text generation needed</text>
+
+  <!-- Conceptual distribution-learning view; flow-matching mechanics omitted. -->
+  <path class="flow" d="M780 495V590"/>
+  <rect x="610" y="594" width="340" height="85" rx="11" fill="#fafafa" stroke="#cccccc"/>
+  <text class="heading" x="780" y="630" text-anchor="middle">Action distribution</text>
+  <text class="label" x="780" y="660" text-anchor="middle">Via flow matching</text>
+  <path class="flow" d="M610 621H368"/>
+  <rect x="44" y="594" width="320" height="85" rx="12" fill="#fff5cf" stroke="#ffc300" stroke-width="1.8"/>
+  <text class="heading" x="204" y="630" text-anchor="middle">Behavior cloning</text>
+  <text class="label" x="204" y="660" text-anchor="middle">Flow-matching loss</text>
+
+  <!-- A representative backward route through the head and into the VLM. -->
+  <path class="grad" d="M366 655H606"/>
+  <path class="grad" d="M912 590V498"/>
+  <path class="grad" d="M641 487V551H338V490"/>
+  <path class="grad" d="M69 473V303"/>
+  <text class="small" x="450" y="581" text-anchor="middle">Back through attention</text>
+</svg>

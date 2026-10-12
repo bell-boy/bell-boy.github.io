@@ -13,6 +13,28 @@
     font-size: 0.95em;
 }
 
+.post-actions {
+    display: flex;
+    align-items: baseline;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.post-copy-link {
+    padding: 0;
+    border: 0;
+    border-bottom: 1px dotted rgba(34, 34, 34, 0.69);
+    background: none;
+    color: #000;
+    font: inherit;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.post-copy-link:hover {
+    color: #ffc300;
+}
+
 img {
     max-width: min(40em, 100%);
     display: block;

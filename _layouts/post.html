@@ -28,14 +28,19 @@
                             endif %} · {{minutes}} minute read
                         </em>
                     </p>
-                    <a class="post-home-link" href="{{ site.url }}"
-                        >return home</a
-                    >
+                    <div class="post-actions">
+                        <button class="post-copy-link" type="button" aria-live="polite" hidden>copy as markdown</button>
+                        <a class="post-home-link" href="{{ site.url }}"
+                            >return home</a
+                        >
+                    </div>
                 </div>
             </header>
             <hr />
             {{ content }}
         </div>
+        <textarea id="post-markdown" hidden>{{ page.markdown_content | escape }}</textarea>
+        <script defer src="{{ '/assets/js/copy-markdown.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
         <script defer src="{{ '/assets/js/image-captions.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
         {% if page.margin_footnotes %}
         <script defer src="{{ '/assets/js/margin-footnotes.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
