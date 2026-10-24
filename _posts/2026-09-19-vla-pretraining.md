@@ -3,6 +3,8 @@ layout: post
 title: "Summary of Research on Pretraining for Robotic Manipulation"
 usemathjax: true
 margin_footnotes: true
+featured: true
+featured_order: 0
 ---
 
 _This is part of a series exploring interesting questions about robotics. I'll try to summarize existing research and, when needed, propose and run new experiments. Stay tuned!_
