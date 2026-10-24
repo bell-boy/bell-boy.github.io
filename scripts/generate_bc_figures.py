@@ -4,9 +4,9 @@
 # ///
 """Rebuild the BC figures with `uv run scripts/generate_bc_figures.py`.
 
-These are analytic toy distributions, not generated artwork or model results.
-The Gaussian maximum-likelihood fit matches the target's mean and variance;
-the squared-error predictor is its mean.
+These are analytic toy examples, not generated artwork or model results.
+The trajectory figure averages smooth demonstration paths pointwise, which is
+what a squared-error predictor learns when it sees all of them for one start state.
 
 For the flow illustration, A ~ .5 N(-2, .4²) + .5 N(2, .4²), Z ~ N(0, 1),
 independently, and X_tau = (1-tau) Z + tau A. Its marginal is an exact Gaussian
@@ -38,6 +38,9 @@ INK = "#253343"
 GRAY = "#7b8490"
 MODES = np.array([-2.0, 2.0])
 SIGMA = 0.4
+GOAL = (10.0, 0.0)
+OBSTACLE = (5.0, 0.0)
+OBSTACLE_R = 1.4
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans",
@@ -74,33 +77,46 @@ def save(fig, name):
     plt.close(fig)
 
 
-def gaussian_comparison():
+def demo_paths(sides, rng):
+    """Smooth start-to-goal paths that bow around the obstacle on the given sides."""
+    t = np.linspace(0, 1, 400)
+    amplitude = rng.uniform(2.3, 3.3, len(sides))
+    wobble = rng.uniform(-.35, .35, len(sides))
+    y = np.asarray(sides)[:, None] * amplitude[:, None] * np.sin(np.pi * t) + wobble[:, None] * np.sin(2 * np.pi * t)
+    return GOAL[0] * t, y
+
+
+def hits_obstacle(x, y):
+    return np.any(np.hypot(x - OBSTACLE[0], y - OBSTACLE[1]) < OBSTACLE_R)
+
+
+def mean_trajectory():
+    rng = np.random.default_rng(4)
     fig, axes = plt.subplots(1, 2, figsize=(10.4, 5.1))
-    fig.subplots_adjust(left=.08, right=.98, bottom=.14, top=.77, wspace=.25)
-    x = np.linspace(-4, 4, 1600)
-    mean = [1.0, 0.0]
-    sd = [SIGMA, np.sqrt(4 + SIGMA ** 2)]
-    titles = ["One cluster of good actions", "Two clusters of good actions"]
-    for i, ax in enumerate(axes):
-        target = norm.pdf(x, mean[i], SIGMA) if i == 0 else density(x, 1)
-        gaussian = norm.pdf(x, mean[i], sd[i])
-        ax.fill_between(x, target, color=BLUE, alpha=.13, linewidth=0)
-        ax.plot(x, target, color=BLUE, linewidth=3)
-        ax.plot(x, gaussian, color=ORANGE, linewidth=2.8, linestyle=(0, (5, 3)))
-        ax.axvline(mean[i], color=ORANGE, alpha=.6, linewidth=1.5, linestyle=":")
-        ax.plot(mean[i], 0, marker="D", color=ORANGE, markersize=8, clip_on=False, zorder=5)
-        ax.set(xlim=(-3.6, 3.6), ylim=(0, 1.1), xticks=[-3, 0, 3], yticks=[0, .5, 1.0], xlabel="Action")
-        ax.set_title(titles[i], fontsize=17, fontweight="bold", loc="left", pad=12)
-        ax.grid(axis="y", color="#edf0f3")
-        ax.set_axisbelow(True)
-    axes[0].set_ylabel("Probability density")
-    axes[1].annotate("Mean prediction", xy=(0, .012), xytext=(0, .77), ha="center", color=ORANGE, fontsize=14,
-                     arrowprops={"arrowstyle": "->", "color": ORANGE, "lw": 1.5})
-    handles = [Line2D([], [], color=BLUE, lw=3, label="Demonstration distribution"),
-               Line2D([], [], color=ORANGE, lw=2.8, ls="--", label="Best single Gaussian"),
-               Line2D([], [], color=ORANGE, marker="D", ls="none", label="Mean / L₂ prediction")]
+    fig.subplots_adjust(left=.02, right=.98, bottom=.04, top=.77, wspace=.08)
+    cases = [("One way around", [1] * 8), ("Two ways around", [1, -1] * 4)]
+    for ax, (title, sides) in zip(axes, cases):
+        x, ys = demo_paths(sides, rng)
+        mean = ys.mean(axis=0)
+        assert not any(hits_obstacle(x, y) for y in ys)
+        ax.add_patch(plt.Circle(OBSTACLE, OBSTACLE_R, facecolor="#d5dae0", edgecolor=GRAY, lw=1.2, zorder=1))
+        for y in ys:
+            ax.plot(x, y, color=BLUE, lw=1.6, alpha=.55, zorder=3)
+        # The average clears the obstacle only when every demonstration goes the same way.
+        assert hits_obstacle(x, mean) == (len(set(sides)) > 1)
+        ax.plot(x, mean, color=ORANGE, lw=3, ls=(0, (5, 3)), zorder=4)
+        ax.plot(0, 0, marker="o", color=INK, markersize=11, zorder=5)
+        ax.plot(*GOAL, marker="*", color=INK, markersize=22, zorder=5)
+        ax.text(0, -.75, "Start", ha="center", fontsize=12, color=INK)
+        ax.text(GOAL[0], -.85, "Goal", ha="center", fontsize=12, color=INK)
+        ax.set(xlim=(-.9, GOAL[0] + .9), ylim=(-4.2, 4.2), aspect="equal", xticks=[], yticks=[])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.set_title(title, fontsize=17, fontweight="bold", loc="left", pad=12)
+    handles = [Line2D([], [], color=BLUE, lw=2, alpha=.7, label="Demonstrations"),
+               Line2D([], [], color=ORANGE, lw=3, ls="--", label="Average / L₂ prediction")]
     fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(.5, .97), ncol=2, frameon=False, fontsize=13)
-    save(fig, "bc-gaussian-vs-multimodal")
+    save(fig, "bc-mean-trajectory")
 
 
 def flow_evolution():
@@ -162,6 +178,6 @@ def flow_evolution():
 
 
 if __name__ == "__main__":
-    gaussian_comparison()
+    mean_trajectory()
     flow_evolution()
     print(f"Saved SVG and PNG figures to {OUT}")
