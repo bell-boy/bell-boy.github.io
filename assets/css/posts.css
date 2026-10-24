@@ -3,6 +3,12 @@
     margin: 0 auto;
 }
 
+blockquote {
+    margin: 1.5rem 0;
+    padding-left: 1rem;
+    border-left: 4px solid #999;
+}
+
 .post-meta-row {
     display: flex;
     justify-content: space-between;
@@ -11,6 +17,28 @@
     flex-wrap: wrap;
     flex-direction: row;
     font-size: 0.95em;
+}
+
+.post-actions {
+    display: flex;
+    align-items: baseline;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.post-copy-link {
+    padding: 0;
+    border: 0;
+    border-bottom: 1px dotted rgba(34, 34, 34, 0.69);
+    background: none;
+    color: #000;
+    font: inherit;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.post-copy-link:hover {
+    color: #ffc300;
 }
 
 img {
@@ -35,10 +63,55 @@ figcaption {
     font-style: italic;
 }
 
+.image-caption {
+    font-size: 0.85em;
+    color: #777;
+}
+
 div.highlight {
     overflow-x: scroll;
 }
 
 table {
     margin: 0 auto;
+}
+
+/* Keep Jekyll's endnotes as the default for mobile, print, and no JavaScript. */
+.footnotes li {
+    scroll-margin-top: 1rem;
+}
+
+.footnotes li:target {
+    background: #fff5cf;
+}
+
+@media screen and (min-width: 1025px) {
+    .main.has-margin-footnotes {
+        position: relative;
+    }
+
+    .has-margin-footnotes .footnotes > ol {
+        margin: 0;
+        padding: 0;
+        height: var(--footnotes-overflow, 0px);
+    }
+
+    .has-margin-footnotes .footnotes > ol > li {
+        position: absolute;
+        top: var(--footnote-top);
+        left: calc(100% + 2.5rem);
+        width: min(16rem, 23vw);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: #555;
+        overflow-wrap: anywhere;
+    }
+
+    .has-margin-footnotes .footnotes > ol > li > :first-child {
+        margin-top: 0;
+    }
+
+    .has-margin-footnotes .footnotes > ol > li > :last-child {
+        margin-bottom: 0;
+    }
 }

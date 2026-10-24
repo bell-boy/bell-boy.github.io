@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="/assets/css/posts.css" />
+        <link rel="stylesheet" href="/assets/css/posts.css?v=1792874848" />
         <link rel="stylesheet" href="/assets/css/main.css" />
         <link rel="stylesheet" href="/assets/css/code-style.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,9 +24,12 @@
                             07.05.2024    · 13 minute read
                         </em>
                     </p>
-                    <a class="post-home-link" href="https://bell-boy.github.io"
-                        >return home</a
-                    >
+                    <div class="post-actions">
+                        <button class="post-copy-link" type="button" aria-live="polite" hidden>copy as markdown</button>
+                        <a class="post-home-link" href="https://bell-boy.github.io"
+                            >return home</a
+                        >
+                    </div>
                 </div>
             </header>
             <hr />
@@ -307,6 +310,281 @@
 <p>onward to the next project.</p>
 
         </div>
+        <textarea id="post-markdown" hidden># deep learning from scratch, in scratch
+
+I recently spent the better part of last week doing exactly what the title says.
+
+I implemented a 1 layer Feed Foward Network and trained it on (some of) MNIST. All in [scratch](https://scratch.mit.edu/projects/1043415512).
+
+It would help a lot to understand the basics of Deep Learning when reading this, but I&#39;ll try to make it accessible to anyone with a high level understanding of the field. 
+
+# Before coding
+## The data
+
+MNIST is an image classification dataset consisting of labeled 28 by 28 grayscale images of digits from 0-9. The goal of the model is to correctly identify the label of each image.
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/mnist-example.png&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;example of an MNIST image&lt;/em&gt;
+&lt;/p&gt;
+
+For each image, the model should output a series of probablities, representing how likely the model believes that the image belongs to a given class.
+
+For the above image the model might output a vector like 
+
+\\[  \begin{bmatrix} 0.01 \\\\ 0.02 \\\\ 0.01 \\\\ 0.01 \\\\ 0.01 \\\\ 0.08 \\\\ 0.01 \\\\ 0.83 \\\\ 0.01 \\\\ 0.01 \end{bmatrix} \\]
+
+The sum of these entries is one, meaning that it&#39;s a valid probablity distribtuion, and the most likely value is the 8th entry -- which corresponds to the number 7. 
+
+Our model works purely with vectors and matricies, so we can flatten this 28 by 28 grid into a vector of dimension 784. To make things a little simpler, we can *batch* inputs to get a matrix of dimension \\(  784 \times N \\). Where \\( N \\) is the number of images in the matrix. Our output will then have the shape \\( 10 \times N \\).
+
+## The model
+
+I started by writing out the model formally. Given some inputs \\(  X \\) (\\(  X \in \mathbb{R}^{784 \times N}  \\)) our model \\(  f(X) \\) is
+
+\\[  H_{1} = W_{1}X + \boldsymbol{b}_1 \\]
+
+\\[  H_{2} = \textrm{ReLU}(H_1) \\]
+
+\\[  H_{3} = W_{2}H_{2} + \boldsymbol{b}_2 \\]
+
+\\[ f(X) = \textrm{Softmax}(H_3) \\]
+
+Note that \\(  W_1 \in \mathbb{R}^{128 \times 784}, \boldsymbol{b}_1 \in \mathbb{R}^{128}  \\) this means that in the first equation, I add a vector to a matrix. In these cases I broadcast the vector across across the batch dimension of the matrix. The same is true for the second equation.
+
+The columns of \\( H_3 \\) aren&#39;t guaranteed to sum to one. So the **Softmax** function normalizes them and ensures that each column is a valid probablity distribution.
+
+Together, all these equations make up what&#39;s called the **forward pass**, and is one half of the computation we&#39;ll need to do.
+
+## Scratch, the programming langauge
+
+Scratch is pretty limited. 
+
+The main thing we&#39;ll need are multi-dimensional lists of numbers. While scratch does have lists, they&#39;re restricted to one dimension, and can only hold up to 200k elements at a time. This is bad news, as neural networks need a lot of data, and the training set for MNIST contains 60k images of size 784! I&#39;ll talk about how I got around this later.
+
+However, scratch contains most of the math operations we&#39;ll need to actually pull this off. In addition to the 4 basic operators, scratch also contains the natural log and the exponential! (What 10 year old needs the natural log?)
+
+Scratch doesn&#39;t have functions, or any sense of scope, so all variables are global. Instead of functions, scratch has 2 options, **custom blocks** and **messages**. List names can *not* be passed as variables to custom blocks, so I use messages to implement everything.
+
+Messages are signals to various parts of the program. They singal for a block of code to start, but don&#39;t pass along any additional information. I rely on globally avalible buffers and careful reuse of variables to make the most of the messaging system.
+
+# Coding
+## Init
+
+While we can initalize the bias vectors at 0, the weights need to be initalized carefully to avoid vanishing/exploding gradients. The most common initalization is the **xaivier initalization**. In the xaiver init, the values of the weights are sampled from a normal distribution with variance 
+
+\\[  \frac{2}{D_{in} + D_{out}} \\]
+
+The only random variable scratch gives us access to is a uniformly distributed one. However, we can create a standard normal with two unifrom variables using the **box-muller transform**. 
+
+\\[ \mathcal{N}(0, 1) = \sqrt{-2 \ln U_1} \cos(U_2) \\]
+
+Where \\(  U_1 \in [0, 1] \\) and \\(  U_2 \in [0, 2\pi] \\). Finally, we scale by the square root of our target variance.
+
+To store these weights, I create a new scratch list for each one (*w_one, w_two*) along with the bias vectors (*b_one, b_two*). I store the input dimensions and the output dimensions in the global variables w_[n]\_in_features and w_[n]_out_features.
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/weight-init-blocks.png&quot; /&gt;
+  &lt;em&gt;the code used to initalize one weight matrix.&lt;/em&gt;
+&lt;/p&gt;
+
+Notice, that the second random variable, \\( U_2 \\) is over \\(  [0, 360] \\) instead of \\(  [0, 2\pi] \\). Because of course, scratch operates in degrees. 
+
+## Matrix multiplication
+
+To implement matrix multiplication, I needed three things. 1. A way to treat 1D lists as 2D, 2. Some way to initate the operation, and 3. A place to store the result of the operation.
+
+Storing matricies as 1D lists under the hood actually isn&#39;t anything new, and is how pytorch implements it&#39;s tensors. We can define a simple mapping from two coordinates to 1. 
+
+\\[  n_{rows} * r + c  \\]
+
+Where \\( r \\) and \\( c \\) are the current row and column of the matrix respectivly, assuming that the matrix is 0-indexed. 
+
+Well, this assumption is wrong actually! Scratch lists are *1 indexed*, which was an intense source of frustration at the start, but was remedied by pretending everything was 0-indexed and then adding 1 at the end.
+
+With regards to initating the operation, I&#39;ll use the messages I described before. List names cannot be passed as variables, so each matrix multiplication gets it&#39;s own message of the form [first]_[second]_matmul. 
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/mat-mul-scratch.png&quot; /&gt;
+  &lt;em&gt;the code for one matrix multiplication&lt;/em&gt;
+&lt;/p&gt;
+
+The drawback of not having reusable functions is that it&#39;s 10x easier for me to make a mistake. So after each matmul implementation, I *immidately* compare it to a multiplication I perform by hand.
+
+If you look at the code above, you&#39;ll notice I store the result in a list called the *hidden buffer*. This list&#39;s only purpose is to store the resulting multiplication. Every multiplication has an output buffer, and you&#39;ll see why I don&#39;t just get rid of them right after I&#39;m done using them later.
+
+The bias is implemented similarly, the only diffrence is I add the single column bias to *every column* in the hidden matrix. 
+
+ReLU stands for *Rectified Linear Unit* and is what gives the model it&#39;s expressive capablities. It works elementwise implementing the following function on some matrix \\(  M \\) 
+
+\\[ \textrm{ReLU}(M)\_{i, j} = \max(0, M_{i, j}) \\]
+
+## Logsumexp
+The final layer is the softmax of every column in the matrix \\(  H_3 \\). Defined as 
+
+\\[  \textrm{Softmax}(H_3)_{i, j} = \frac{e^{H^3\_{i, j}}}{\sum_k e^{H^3\_{k, j}}} \\]
+
+Like I said earlier, it&#39;s the probablity that the \\( j \\)th image is the number \\( i - 1 \\). 
+
+The loss -- a number which tells us how good the models predictions are -- is defined as follows
+
+\\[ -\frac{1}{N} \sum^N_{i=1} \ln \textrm{Softmax}(H_3)_{y_i, i} \\]
+
+Where \\( \boldsymbol{y} \\) is a vector in \\( \mathbb{R}^N \\) that tells us which classes are correct for a given set of images. This defines the **Cross Entropy Loss**, and our goal is to minimize it. 
+
+Now the denomanator of the softmax calculation is tricky to calculate. For numerical stablity reasons, we don&#39;t calculate it directly. Instead, we perform a little trick described [here](https://leimao.github.io/blog/LogSumExp/). Below is the code I wrote (dragged?) to implement this.
+
+![](/assets/images/logsumexp-blocks.png)
+
+It&#39;s beautiful.
+
+
+## The backward pass
+Fortunatly, the backward pass uses much of the same operations that the foward pass does. The only exception being the *Heavyside function*, which I&#39;ll describe later.
+
+At a high level, Gradient Descent works by finding the direction that loss decreases the most and making a small step in that direction. To find this direction, we find the gradient with repsect to the loss of all four of the trainable parameters. 
+
+The main way to do this is via the *chain rule*. We can&#39;t directly calculate the derivative of the loss wrt to any one parameter, but we can do so indirectly.
+
+For example, to calculate \\(  \frac{dL}{d W_2} \\) we calculate 
+
+\\[  \frac{dL}{dW_2} = \frac{dL}{dH_3} \frac{dH_3}{dW_2} \\]
+
+Computing gradients like this is called **the backward** pass, and is the other half of the computation I mentioned earlier.
+
+This is true for scalar functions with scalar outputs, but each of these things are matricies and that complicates things. You can&#39;t just multiply two matrices together. 
+
+For this, I asked ChatGPT. 
+
+I felt fine asking ChatGPT about the details for three reasons
+
+1. Nothing I&#39;m doing isn&#39;t standard, and has probably been done before. In fact, ChatGPT was able to pick up on the fact that I was creating a NN given only the equations. 
+
+2. If I were to ever do this again in a real programming language, I wouldn&#39;t touch matrix based backprop with a 10ft pole. Andrej Kaparthy has a good tutorial on implementing **scalar valued** backprop that doesn&#39;t give me an aynurism. 
+
+3. It made the progamming (dragging?) 10 times faster. This project easily could&#39;ve taken a month if I had to teach my self the details to matrix calculus to make this. 
+
+That being said, you&#39;ll see why this might have been an issue later.
+
+Anyways, here&#39;s the graidents for each parameter matrix according to ChatGPT
+
+\\[ \frac{dL}{d\boldsymbol{b}_1} = (W_2^T(f(X) - Y) \odot \textrm{Heaviside}(H_1)) \\]
+\\[ \frac{dL}{dW_1} = (W_2^T(f(X) - Y) \odot \textrm{Heaviside}(H_1))X^T \\]
+\\[ \frac{dL}{d\boldsymbol{b}_2} = f(X) - Y \\]
+\\[ \frac{dL}{dW_2} = (f(X) - Y)H_2^T \\]
+
+You&#39;ll notice a lot of reused computation here, it&#39;s something I took advantage of to make implementing this less of a nightmare. Note that Y is the labels matrix. \\( Y \in \mathbb{R}^{10 \times N} \\), it has \\( N \\) columns each containing a [one hot encoded](https://en.wikipedia.org/wiki/One-hot) label of each image. 
+
+The *Heaviside function* is the derivative of the ReLU function, and is defined as follows
+
+\\[ \textrm{Heaviside}(X)\_{i, j} = \begin{cases} 1 &amp; X_{i, j} \geq 0 \\\\ 0 &amp; X_{i, j} &lt; 0  \end{cases} \\]
+
+Now all that&#39;s left to do is implement the fucntions, load in the data, and profit right?
+
+# Then it all went horribly wrong
+
+You see, I&#39;ve been spoiled by pytorch. I&#39;ve never really had to think about how the arrays were stored under pytorch&#39;s hood. Yes I knew they were flat arrays for fast indexing, but *in what order*. Even though I had checked each matmul by had, I hadn&#39;t bothered to check the *order* of each array. When I say order, I mean the order the values exist in memory. 
+
+There are two major orders, *column major* and *row major*. I was assuming everything was column major, but outputting the results of my matrix multiplications in row major order! Neural Networks fail silently, and it wasn&#39;t until my loss inital loss started trending *up* that I realized I would have to rewrite *everything I had done so far*. By now, I&#39;d call myself a seinor scratch developer, so reimplementing everything only took a day. 
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;https://craftofcoding.wordpress.com/wp-content/uploads/2017/02/rowcolumnarrays.jpg&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;image from &lt;a href=&quot;https://craftofcoding.wordpress.com/2017/02/03/column-major-vs-row-major-arrays-does-it-matter/&quot;&gt;the craft of coding&lt;/a&gt;&lt;/em&gt;
+&lt;/p&gt;
+
+To test everything, I created some dummy datapoints and had the model overfit to them. The results were beautiful. Loss, quickly and rapidly decreasing.
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/dummydata-scratch-train.png&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;loss curve on 2 random datapoints&lt;/em&gt;
+&lt;/p&gt;
+
+MNIST, was less beautiful. 
+
+# Loading in the data
+
+MNIST, despite being small by modern standards, is massive by scratch standards. It isn&#39;t possible to load the entire dataset into the input buffer, nor did I have the energy left to write a batch loader for a toy project. So I loaded in 250 datapoints and tried to make due with that. 
+
+The model is small, and our dataset is smaller. Neural Networks are not known for being sample efficent, and I am using no forms of regularization. I&#39;m using full batch gradient descent and train on 200 steps for each graph here.
+
+The graphs below are a result of using progressively larger subsets of the 250 samples. I didn&#39;t have matplotlib, so please excuse the janky plotting setup. Loss starts at ~2.3 for each graph. Notice that I decreased the learning rate by an order of magintude compared to the plot above, this is because I was suffering from the *Dying ReLU* problem. The heaviside function stops gradient flow through zeroed out neruons, in some cases, this completely causes those neruons to never fire again. While I could implement a new activation function, decreasing the learning rate seemed to work.
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/one-sample-scratch.png&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;loss curve on one MNIST sample&lt;/em&gt;
+&lt;/p&gt;
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/four-sample-scratch.png&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;loss curve on four MNIST samples&lt;/em&gt;
+&lt;/p&gt;
+ 
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/sixteen-sample-scratch.png&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;loss curve on sixteen MNIST samples&lt;/em&gt;
+&lt;/p&gt;
+
+&lt;p class=&quot;text-center&quot;&gt;
+  &lt;img src=&quot;/assets/images/sixty-four-sample-scratch.png&quot; style=&quot;&quot; /&gt;
+  &lt;em&gt;loss curve on sixty-four MNIST samples&lt;/em&gt;
+&lt;/p&gt;
+
+Training on 64 samples took 5+ hours on my machine, all for this depressing ass loss graph, so I didn&#39;t bother training on the full subset.
+
+So can you build a nerual network in scratch? Yes! Will it work? Well...
+
+# Looking back
+
+Why did it *really* fail to converge. Was it because of shoddy GPT math? Possibly. However, the model has everything pretty much stacked against it. 
+- Training is *unbearably* slow (in the time I might do 5 training steps on 250 samples, I could&#39;ve finished 5 epochs on the full 60k images in the equivilant pytorch implementation) as a result even the 4 sample graph took around 15 mintues of training.  
+- Data is incredilbly limited, even sample efficent models trained on MNIST need a few thousand examples.  
+- The model is pretty small, and super shallow. While yes, I could&#39;ve added more hidden layers. I also have spent a week+ on this. 
+- The loss curve was *smooth*! I suspect this is because I&#39;m not using SGD, but I wasn&#39;t expecting it to be this smooth, what&#39;s up with that? 
+
+But this whole ordeal taught me a valuable lesson in paitence, and made me appricate pytorch *so* much more. Feel free to look at the code and try to find any bugs! I&#39;ve removed the MNIST data because scratch wouldn&#39;t let me publish a project so large, but here&#39;s the code I used to generate the image and label files. 
+
+```python
+import numpy as np
+import pandas as pd
+from torchvision import datasets, transforms
+
+# Load the MNIST dataset
+transform = transforms.Compose([transforms.ToTensor()])
+mnist_dataset = datasets.MNIST(root=&#39;./data&#39;, train=True, download=True, transform=transform)
+
+# Prepare the data for the first 250 samples
+images = []
+labels = []
+
+for i in range(250):
+    image, label = mnist_dataset[i]
+    # Flatten the image and add it to the images list
+    flattened_image = image.view(-1).numpy()
+    images.append(flattened_image)
+    
+    # Create a one-hot encoded label
+    one_hot_label = np.zeros(10)
+    one_hot_label[label] = 1
+    labels.append(one_hot_label)
+
+# Convert lists to numpy arrays
+images = np.array(images).reshape(-1, 1)  # Column-major order
+labels = np.array(labels).reshape(-1, 1)  # Column-major order
+
+# Convert numpy arrays to pandas DataFrames
+images_df = pd.DataFrame(images)
+labels_df = pd.DataFrame(labels)
+
+# Save DataFrames to CSV files
+images_df.to_csv(&#39;images.csv&#39;, header=False, index=False)
+labels_df.to_csv(&#39;labels.csv&#39;, header=False, index=False)
+```
+
+onward to the next project.
+</textarea>
+        <script defer src="/assets/js/copy-markdown.js?v=1792874848"></script>
+        <script defer src="/assets/js/image-captions.js?v=1792874848"></script>
+        
         <script>
             window.MathJax = {
                 tex: {
@@ -336,5 +614,7 @@
             defer
             src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js"
         ></script>
+        <script defer src="/assets/js/external-links.js?v=1792874848" data-site-url="https://bell-boy.github.io"></script>
+
     </body>
 </html>

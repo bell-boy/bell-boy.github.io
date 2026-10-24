@@ -1,0 +1,24 @@
+Edit the supplied four-panel robotics diagram to match the visual style of its intended blog. This is a STYLE edit: preserve all four panel subjects, all command equations, numeric values, labels, axis directions, angle meanings and positions. Keep the diagrams scientifically readable.
+
+The actual blog's design system:
+- Pure white background (#ffffff), no texture or gradients.
+- Headings in Libre Baskerville or a closely matching classic book serif. Use restrained medium weight, sentence case, color #ffc300 (the blog's yellow).
+- Body and annotation text in IBM Plex Sans or a closely matching understated sans serif, regular weight, charcoal #444444. Keep labels clearly legible at a blog content width of about 640px.
+- Supporting explanatory lines and footer in smaller muted gray #777777; italicize these like the blog's figure captions.
+- Generous whitespace and simple editorial typography, no infographic decorations.
+
+Apply changes:
+1. REMOVE all four rectangular panel borders. Separate the four panels with generous whitespace, perhaps one very faint horizontal hairline between rows. No enclosing card outlines, no shadow.
+2. Change the four large heavy black sans-serif titles to elegant serif yellow #ffc300 headings. Titles remain exactly "Absolute joint angle", "Delta joint angle", "Absolute end-effector pose", "Delta end-effector pose".
+3. Replace teal link and gripper fills with a soft warm light gray (#e7e5df), thin dark charcoal outlines. Current pose remains lighter gray dashed. Use yellow #ffc300 for motion arrows/angle arcs, with dark charcoal numeric labels so they remain readable.
+4. Reduce the boldness of the command lines; use regular or medium IBM Plex Sans. Equations and signs unchanged:
+"Command: q = 45°"
+"Command: Δq = +15°"
+"Command: x = 3, y = 2, φ = 30°"
+"Command: Δx = +2, Δy = +1, Δφ = +30°"
+5. Make explanatory subtitles and footer muted gray, smaller, gently italic, rather than bold.
+6. Keep all visual explanations and numeric examples. Do not add decorations, logos, new text, or extra objects. The image should feel like a spare diagram printed in the same typography and colors as a personal research blog.
+
+Small accuracy correction while restyling: in the bottom-right current gray gripper, both fingers should be parallel and oriented horizontally at 0°, so that the target gripper with parallel fingers at 30° shows a genuine +30° rotation. The top-right "+15°" arc should point from the current 30° direction UP toward target 45° direction, with a single arrowhead at the target direction. Keep the lower-right displacement arrow pointing from (1,1) to (3,2).
+
+Produce a clean landscape raster illustration with high-resolution crisp line work.

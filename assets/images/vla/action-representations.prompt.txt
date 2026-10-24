@@ -1,0 +1,17 @@
+Create an original, clean educational robotics diagram. White background, flat textbook line art, charcoal text, muted teal target marks, dashed gray current marks, mustard change arrows. Landscape 3:2. Large clear sans-serif labels, generous whitespace, four equal panels in a 2x2 grid. No photographic robot, no realistic rendering.
+
+This figure illustrates COMMAND QUANTITIES with independent simple examples. Do NOT draw a complete robot arm and do NOT claim all panels describe one shared robot motion.
+
+Panel TOP LEFT title "Absolute joint angle".
+Draw a close-up of ONE revolute elbow joint, a circular pivot in the center. An incoming rigid link runs horizontally into pivot from left. A short thin horizontal dashed zero-angle reference extends right of pivot. ONE solid teal outgoing rigid link runs from pivot upwards to the right at 45 degrees. Thin angle arc from right horizontal reference to outgoing link labeled "45°". Label beneath drawing "Command: q = 45°". Small subtitle "Specify the target angle".
+
+Panel TOP RIGHT title "Delta joint angle".
+Draw the same close-up of ONE elbow pivot and incoming horizontal link. A gray dashed outgoing link at 30 degrees above horizontal and a solid teal outgoing link at 45 degrees above horizontal, both equal length and attached to SAME pivot. Small mustard arc from gray link direction to teal link direction, only 15 degrees sweep, labeled "+15°". Place short callout labels "Current: 30°" and "Target: 45°" with ample space. Below diagram "Command: Δq = +15°". Small subtitle "Specify the angle change".
+
+Panel BOTTOM LEFT title "Absolute end-effector pose".
+Draw a simple Cartesian XY plot with origin at lower left, x rightwards and y upwards. A SINGLE solid teal parallel-jaw gripper symbol whose center is at x=3, y=2 on the plot. Light dotted projections from its center to x tick "3" and y tick "2". Gripper is oriented 30 degrees anticlockwise from horizontal, with thin short arc labeled "30°" measured from horizontal reference at gripper center. No arm attached; this is an isolated endpoint pose example, not a detached piece of a drawn arm. Below plot exact text "Command: x = 3, y = 2, φ = 30°". Small subtitle "Specify target position and orientation".
+
+Panel BOTTOM RIGHT title "Delta end-effector pose".
+Draw Cartesian XY axes matching bottom left. Draw ONE gray dashed gripper centered at (1,1), oriented 0 degrees, and ONE solid teal gripper centered at (3,2), oriented 30 degrees. These are two poses of the same gripper. Mustard arrow from gray center to teal center, pointing UP and RIGHT. Label it "Δx = +2, Δy = +1". Small mustard orientation-change arc next to teal gripper labeled "Δφ = +30°". Below plot exact text "Command: Δx = +2, Δy = +1, Δφ = +30°". Small subtitle "Specify position and orientation changes".
+
+Small footer "Planar examples • Position changes expressed in the base frame". Position units arbitrary; do not add cm or meters. No overall legend needed because the panels label quantities directly. All angle arcs must be located at their joint or gripper center, no extraneous floating labels, no extra fingers or joints. Distinguish ABSOLUTE angles measured from a reference from DELTA angles measured between current and target. Keep numbers and signs correct and all text legible.
