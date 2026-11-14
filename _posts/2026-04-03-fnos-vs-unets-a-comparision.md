@@ -3,10 +3,15 @@ layout: post
 title: "fourier neural operators vs unets: a comparison"
 usemathjax: true
 featured: true
+margin_footnotes: true
 featured_order: 2
 ---
 
 _tl;dr: Fourier Neural Operators (FNOs) and U-Nets are two classes of Image to Image Networks. I explore their performance on a semantic segmentation task. Code can be viewed [here](https://colab.research.google.com/drive/1TLfvFH6_nG3WNUh7UZB0CUE9E_kuKYnb?usp=sharing)_
+
+_[UPDATE Nov 2026]: I briefly revisted this project when getting ready to share it and found something interesting. These don't really fit with the post as is, so I talk more about them in the [new results](#new-results) section_
+
+
 
 # introduction
 
@@ -165,7 +170,7 @@ This was the last time I changed the UNet hyperparameters.
 
 After a long weekend, I had tuned the FNO to the point where it could get to an mIoU of ~.60 in 35 minutes. 
 Changes included:
-1. Dramatically reducing the number of Fourier modes per layer, FNOs can compose frequencies to produce higher frequency filters.
+1. Dramatically reducing the number of Fourier modes per layer. This allowed for much faster training. The hope was that FNOs would be able to use composition to make up for the lost capacity
 2. Dramatically increasing hidden dimension size. Causes huge increases in computational cost, but also causes huge corresponding gains in performance.
 3. Slightly changing the architecture: Instead of adding the convolution output to the previous state then performing a ReLU followed by a BatchNorm, I perform the ReLU on the convolution output followed by addition to the previous state and a BatchNorm. This was motivated by noticing that the original form probably had a harder time expressing the identity. 
 
@@ -276,9 +281,35 @@ Instead, the benefit FNOs should get from downsampling is that it allows them to
 
 If you have opinions on this article or feedback on the experiments, please don't hesitate to tweet at me at [@0xf3mi](https://x.com/0xf3mi)! I hope you enjoyed reading this article as much as I enjoyed writing it. Till next time!
 
-<hr>
+# New Results
+
+Hi! Femi from the future here (well, past relative to the reader). After re-reading this post, I got curious.
+
+It's likely that FNOs fail to process higher frequency information via composition. But is that the _only_ thing holding them back? What if they had access to all the frequency information? Would they _then_ be able to outperform?
+
+The answer is still no! But they perform a lot better!
+
+<figure>
+  <img src="{{ site.baseurl }}/assets/images/fno-unet/full-freq-fno.png" alt="metrics">
+</figure>
+
+<figure>
+  <img src="{{ site.baseurl }}/assets/images/fno-unet/full-fno-samples.png" alt="example">
+</figure>
+
+
+While still worse than the UNet, both training loss and validation mIoU are very very close!
+However, validation loss shows that the FNO seems to be overfitting much more strongly than the UNet.
+
+It should be mentioned that a hefty price was paid: the FNO is now on the order of a _billion parameters_! While the UNet is on the order of a hundred thousand.[^tuning]
+
+My rough intuition here is that 
+1. FNOs can't process frequencies you truncate away. There is no "receptive field growth" style gain from composition for them.
+2. Frequency space just seems like the wrong inductive bias for this problem. Look at the weird fuzzy artifacts created by the FNO. It looks like the way we've forced it to contort its weights is painful. 
+
 
 [^1]: Well really deep learning uses cross-correlation, which is defined as: \\[(f \star g)[n] = \sum_{m} f[m]g[n+m]\\] But the two operations are very similar, and the difference is not important for our purposes.
 [^2]: More precisely, if we assume that the function is periodic and satisfies certain regularity conditions, then it can be represented as a discrete weighted sum of sinusoids.
 [^3]: Here's a [link](https://betterexplained.com/articles/an-interactive-guide-to-the-fourier-transform/) to learn more, also check out this cool [3b1b video](https://www.youtube.com/watch?v=spUNpyF58BY) for a visual introduction
 [^4]: This is a bit of a simplification; the function $w_t$ doesn't map to the same space as $v_t$, it maps to the space of square matrices operating on the same space as $v_t$. Also things are a bit more complex since our function inputs are vector valued. Check out the original [paper](https://arxiv.org/pdf/2010.08895) for more details.
+[^tuning]: Though I won't pretend like each model was rigorously tuned.
